@@ -1,52 +1,189 @@
-# sauter-university-2025-challenge
+# Sauter Challenger — Plataforma de Dados e ML/Agentes na Google Cloud
 
+> Monorepo para a solução do desafio Sauter: ingestão dos dados de ENA (ONS), exposição via API REST em Python, visualização analítica e, a critério do time, **Trilho A (Modelo Preditivo)** ou **Trilho B (Multi‑Agente com RAG)**. Infraestrutura como código em Terraform, deploy em Cloud Run, observabilidade, FinOps e CI/CD com Workload Identity Federation (WIF).
 
-![Architecture](./img/university.drawio.png)
+---
 
-Sobre o desafio: 
+## Objetivos do projeto
 
-> Realizar a implementação vista na arquitetura acima;
+1. **Implementar a arquitetura** proposta (GCP) com boas práticas de engenharia de dados e software.  
+2. **Ingestão** dos dados da ONS (ENA/Reservatórios): `https://dados.ons.org.br/dataset/ear-diario-por-reservatorio`.  
+3. **API REST (Python)** para servir dados por **data específica** e **intervalo histórico**.  
+4. Escolher um dos trilhos e entregar:
+   - **A. Modelo preditivo** do volume de água (ENA) com acurácia mínima de **70%**, versionamento e serving em Cloud Run; ou
+   - **B. Multi‑Agente (ADK + Gemini)** com **RAG**: orquestrador + agente ENA + agente Sauter (conteúdo do site `https://sauter.digital`), com respostas “Lúcidas” e citações.
+5. **Dashboard analítico** (Looker Studio) justificando a escolha de gráficos.
+6. **FinOps**: Budget **R$ 300** com alertas (mentores + equipe).
+7. **Qualidade**: testes unitários e de integração **≥ 85%** de cobertura; documentação e docstrings; CI/CD com canário/rollback.
 
-Cada equipe se divida em grupos de 5 pessoas. Cada equipe precisará desenvolver o esquema apresentado na arquitetura, seguindo as boas práticas de engenharia de dados, de software e do Google Cloud.
-Cada equipe deverá realizar uma demonstração PRÁTICA sobre a sua solução, pontuando explicitamente cada ponto destacado abaixo:
-- Pitch, “Why Google?” (apresentação teórica de no máximo 3~5 minutos)
+---
 
-- Integração com a ferramenta de CI/CD (github actions);
+## Stack técnica
 
-- Terraform utilizado para levantar a infraestrutura;
+- **Infra**: Terraform, Workload Identity Federation, Artifact Registry, Cloud Run, Cloud Storage, BigQuery, Cloud Monitoring/Logging, Budget & Alerts.  
+- **Aplicação**: Python 3.11+, FastAPI, Uvicorn, Pydantic, pytest/coverage, ruff, mypy.  
+- **Dados**: ingestão ONS (requests/httpx), GCS (parquet/csv), BigQuery (tabelas externas, Trusted/Processed, views), DQ.  
+- **ML (Trilho A)**: BigQuery para features, Prophet/ARIMA/XGBoost, versão e serving.  
+- **Agentes (Trilho B)**: ADK + Gemini, RAG com índice em BQ/GCS, orquestração de agentes.  
+- **BI**: Looker Studio.
 
-- Pipeline de transformação dos dados;
-REST API que buscará os dados para uma data específica ou um conjunto de dados históricos;
+---
 
-- Modelo preditivo que calcula o volume de água previsto para um reservatório (baseado no modelo de ENA)
+## Estrutura do repositório
 
-> https://dados.ons.org.br/dataset/ear-diario-por-reservatorio
+```text
+/
+├── infra/
+│   ├── envs/{dev,hml,prod}/
+│   └── modules/{bq,cloudrun,artifact,budget,iam,gcs,monitoring,logging}/
+├── services/
+│   ├── api/                 # FastAPI (REST) + testes + Dockerfile
+│   └── predictor/           # Serving do modelo (Trilho A) OU gateway de agentes (Trilho B)
+├── data/
+│   ├── ingest/              # Ingestão ONS por data (--date) e histórico
+│   ├── modeling/            # Trusted/Processed (DDL, views), partições e clustering
+│   └── quality/             # Regras DQ, relatórios e tabelas de violações
+├── ml/
+│   ├── specs/               # Métricas, contratos de features, referência do target
+│   ├── training/            # Notebooks/pipelines de treino e validação
+│   └── serving/             # Empacotamento de artefatos e load do modelo
+├── dashboards/              # Definições/descrições Looker Studio
+├── docs/                    # ADRs, arquitetura, API spec, justificativa de gráficos
+├── runbooks/                # Operação: SLOs, incidentes, rollback, custo
+└── .github/workflows/       # ci.yml, cd.yml (lint, mypy, tests, build, deploy canário)
+```
 
-OU apresentar a criação de um agente com o ADK + Gemini, com mecanismo de RAG, que consulta a base de dados HISTÓRICA de ENA e é capaz de responder dúvidas sobre o volume de uma bacia hidrográfica em um determinado período, o agente também deve responder dúvidas sobre a sauter, baseado nos dados do site oficial da sauter http://sauter.digital. 
-- Exibir em uma representação gráfica uma análise sobre os dados tratados.
+### Por que esta estrutura?
+- **Serviços desacoplados**: `services/api` e `services/predictor` são deploys independentes (menos conflito de PR e rollback cirúrgico).  
+- **Infra como 1a classe**: `gcs`, `monitoring` e `logging` são módulos explícitos (observabilidade e custo não são “efeitos colaterais”).  
+- **Dados em camadas**: separação entre ingestão, modelagem e qualidade; BQ fica limpo e auditável.  
+- **Documentação central**: `/docs` concentra ADRs e specs; `/runbooks` cobre operação.  
+- **CI/CD versionado**: Workflows na raiz com WIF; sem credenciais estáticas.
 
-### Critérios avaliados:
+---
 
-Além de todos os entregáveis acima, serão considerados:
-- Boas práticas de Engenharia de Software, como a utilização de padrões de projeto ou a utilização indevida de um padrão de projeto.
-- Boas práticas na construção de REST APIs.
-TODOS os integrantes do grupo precisam realizar commits e especificar as branchs trabalhadas.
-- Criação de budget alerts nos projetos, com custo máximo de 300 reais, e inclusão do email de ao menos 3 mentores como canal de envio, mais a equipe que construiu a solução, obrigatoriamente.
-- Repositório Privado no github.
-Utilização do workload identity federation.
-Containerização da API.
-- Documentação do código e docstrings.
-Justificativa de escolha do tipo de gráfico para exibição dos dados.
-- Utilizar obrigatoriamente a linguagem Python na criação da API.
-- Apresentar os testes de unidade e testes de integração mockados com a api de dados abertos, com cobertura mínima de 85%.
-- Para os grupos que escolherem criar o modelo preditivo, apresentar acurácia mínima de 70%, com testes nos conjuntos de dados, juntamente com a justificativa do modelo e das técnicas utilizadas.
-- Para os grupos que escolherem criar um agente, será necessário apresentar a resposta lúcida do modelo, incluindo o prompt utilizado e a justificativa do modelo, como o testes e a orquestração de agentes;
-- Explicitamente para as equipes que optarem pela criação de um agente, será necessário que o agente seja um “multi-agente”, ou seja, um orquestrador de outros agentes.
-Os agentes obrigatórios serão:
-Agente Orquestrador (root);
-Agente que responde as perguntas sobre a ENA;
-Agente que tira dúvidas sobre a sauter, consultando o site da Sauter (sauter.digital);
+## Fluxo de alto nível
 
-- modelo spotify 
+1. **Ingestão** baixa arquivos da ONS por data (`--date=YYYY-MM-DD`) e escreve em **GCS** particionado: `gs://.../ena/ano=YYYY/mes=MM/dia=DD/*.parquet`.  
+2. **BigQuery** lê via **tabelas externas** e popula **Trusted/Processed**, com regras de **Data Quality** (valores negativos, datas futuras, duplicidades).  
+3. **API REST** expõe `GET /v1/ena/...` por data e histórico;  
+   - **Trilho A**: `GET /v1/predictions/...` serve previsões do modelo versionado;  
+   - **Trilho B**: `POST /v1/agents/query` chama o orquestrador (ENA + Sauter/RAG).  
+4. **Dashboards** consomem views otimizadas (`vw_*`).  
+5. **SRE/FinOps**: Cloud Monitoring/Logging + budget R$300 com alertas.
 
-- Geral de dados 
+---
+
+## Endpoints (resumo)
+
+- `GET /healthz` — healthcheck.  
+- `GET /metrics` — métricas Prometheus.  
+- `GET /v1/ena/reservatorios/{id}/daily?date=YYYY-MM-DD`  
+- `GET /v1/ena/reservatorios/{id}/historico?start_date&end_date`  
+- **Trilho A**: `GET /v1/predictions/reservatorios/{id}?date=YYYY-MM-DD`  
+- **Trilho B**: `POST /v1/agents/query` → `{question}` retorna `{answer, agent_used, citations}`
+
+Documentação completa via **OpenAPI** em `/docs` da API.
+
+---
+
+## Pré‑requisitos
+
+- Python 3.11+  
+- Terraform 1.6+ e `gcloud` CLI  
+- Conta de faturamento e projeto GCP  
+- Permissões para criar Workload Identity Federation (ou suporte de um admin)
+
+---
+
+## Como subir a infraestrutura (Terraform)
+
+1. Configure variáveis e backend remoto em `infra/envs/dev`.  
+2. Execute:
+   ```bash
+   cd infra/envs/dev
+   terraform init
+   terraform plan -out plan.tfplan
+   terraform apply plan.tfplan
+   ```
+3. Módulos que serão aplicados: `bq`, `cloudrun`, `artifact`, `budget`, `iam`, `gcs`, `monitoring`, `logging`.  
+4. No final, você terá:
+   - Projeto com APIs habilitadas;  
+   - Repositório no **Artifact Registry**;  
+   - Serviços base no **Cloud Run**;  
+   - **Budget** R$300 com e‑mails dos mentores;  
+   - Buckets GCS e datasets BigQuery prontos.
+
+> **WIF (GitHub Actions):** o módulo `iam` cria pool/provedor e vincula o repositório ao `sa-cicd` para deploy sem chaves.
+
+---
+
+## Como rodar a API localmente (dev)
+
+```bash
+cd services/api
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements-dev.txt
+uvicorn app.main:app --reload --port 8000
+# Swagger em http://localhost:8000/docs
+```
+
+Variáveis de ambiente comuns:
+```bash
+BQ_PROJECT=...
+BQ_DATASET=...
+GCS_BUCKET_RAW=...
+API_AUTH_MODE=iam|apikey
+```
+
+---
+
+## Testes e qualidade
+
+- **Unitários e integração mockada** com `pytest` e `pytest-cov` (alvo ≥ **85%**).  
+- Lint com **ruff** e type-check com **mypy**.  
+- **GitHub Actions** executa: lint → type → testes → build → cobertura → deploy canário.
+
+```bash
+pytest -q --cov=app --cov-report=term-missing
+ruff check .
+mypy services/api
+```
+
+---
+
+## Observabilidade e FinOps
+
+- **SLO Cloud Run**: p95 < 500 ms; erro < 1%.  
+- Dashboards de **Monitoring** para latência, taxa de erro, QPS e custo diário.  
+- **Budget** R$300 com thresholds 50/80/100%, e‑mails dos mentores + equipe.  
+- Logs estruturados em JSON, rastreio por `trace_id`.
+
+---
+
+## Decisão de trilho (A ou B)
+
+- **A — Modelo preditivo**: baseline (ARIMA/Prophet/XGBoost), features em BQ (lags, sazonalidade), registro de modelo em GCS, endpoint `/v1/predictions`.  
+- **B — Multi‑Agente**: índice RAG (corpus do site + ENA histórica), agentes `ena` e `sauter`, orquestrador que roteia por intenção, avaliação com conjunto de perguntas.
+
+> A escolha e a justificativa devem ser registradas em um **ADR** em `/docs/adr/`.
+
+---
+
+## Padrões de contribuição
+
+- **Branching**: trunk‑based, PRs curtos a partir de `feat/<area>-<descricao>`.  
+- **Commits**: Conventional Commits.  
+- **Proteções**: `main` protegida; PR exige CI verde e cobertura ≥ 85%.
+
+---
+
+## Licença
+
+Definir conforme necessidade do curso/equipe (ex.: MIT).
+
+---
+
+## Autores e contato
+
+Adenilson, Clauderson, Felipe, Mari e Raylandson — Equipe Sauter Challenger.
