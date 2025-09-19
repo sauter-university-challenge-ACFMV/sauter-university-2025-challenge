@@ -33,12 +33,17 @@
 
 ```text
 /
-├── infra/
-│   ├── envs/{dev,hml,prod}/
-│   └── modules/{bq,cloudrun,artifact,budget,iam,gcs,monitoring,logging}/
-├── services/
-│   ├── api/                 # FastAPI (REST) + testes + Dockerfile
-│   └── predictor/           # Serving do modelo (Trilho A) OU gateway de agentes (Trilho B)
+├── .github/workflows/       # CI/CD pipeline (ci.yml configurado)
+├── docs/img                  # ADRs, arquitetura, API spec, justificativa de gráficos
+├── src/
+│   ├── api/                 # API em desenvolvimento + arquivos temporários CI
+│   │   ├── main.py          # Arquivo principal (a ser implementado pela equipe)
+│   │   ├── requirements.txt # Dependências Python + ferramentas de qualidade
+│   │   └── tests/           # Testes temporários para pipeline CI
+│   └── infra/
+│       ├── envs/{dev,hml,prod}/
+│       └── modules/{bq,cloudrun,artifact,budget,iam,gcs,monitoring,logging}/
+│
 ├── data/
 │   ├── ingest/              # Ingestão ONS por data (--date) e histórico
 │   ├── modeling/            # Trusted/Processed (DDL, views), partições e clustering
@@ -48,9 +53,9 @@
 │   ├── training/            # Notebooks/pipelines de treino e validação
 │   └── serving/             # Empacotamento de artefatos e load do modelo
 ├── dashboards/              # Definições/descrições Looker Studio
-├── docs/                    # ADRs, arquitetura, API spec, justificativa de gráficos
 ├── runbooks/                # Operação: SLOs, incidentes, rollback, custo
-└── .github/workflows/       # ci.yml, cd.yml (lint, mypy, tests, build, deploy canário)
+├── Dockerfile               # Containerização da API (temporário na raiz)
+└── pyproject.toml           # Configurações globais (ruff, mypy, pytest)
 ```
 
 ### Por que esta estrutura?
@@ -98,10 +103,10 @@ Documentação completa via **OpenAPI** em `/docs` da API.
 
 ## Como subir a infraestrutura (Terraform)
 
-1. Configure variáveis e backend remoto em `infra/envs/dev`.  
+1. Configure variáveis e backend remoto em `src/infra/envs/dev`.  
 2. Execute:
    ```bash
-   cd infra/envs/dev
+   cd src/infra/envs/dev
    terraform init
    terraform plan -out plan.tfplan
    terraform apply plan.tfplan
@@ -121,11 +126,10 @@ Documentação completa via **OpenAPI** em `/docs` da API.
 ## Como rodar a API localmente (dev)
 
 ```bash
-cd services/api
+cd src/api
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements-dev.txt
-uvicorn app.main:app --reload --port 8000
-# Swagger em http://localhost:8000/docs
+pip install -r requirements.txt
+# API será implementada pela equipe - por enquanto só estrutura para CI
 ```
 
 Variáveis de ambiente comuns:
@@ -136,6 +140,37 @@ GCS_BUCKET_RAW=...
 API_AUTH_MODE=iam|apikey
 ```
 
+### Validação local (antes de fazer PR)
+```bash
+# Lint e formatação
+ruff check src/
+ruff format src/
+
+# Type checking  
+mypy src/ --config-file=pyproject.toml
+
+# Testes com cobertura
+cd src/api && pytest tests/ --cov=. --cov-fail-under=85
+
+# Build Docker
+docker build -t university-api .
+```
+
+---
+
+## Pipeline CI/CD
+
+### O que é validado automaticamente
+- **Lint + formatação:** `ruff` verifica estilo e organiza imports
+- **Type checking:** `mypy` valida anotações de tipo  
+- **Testes + cobertura:** `pytest` com cobertura mínima de **85%**
+- **Docker build:** valida containerização da aplicação
+
+### Configurações centralizadas
+- **`.github/workflows/ci.yml`**: pipeline executado em PRs
+- **`pyproject.toml`**: configurações de ruff, mypy e pytest  
+- **Critério de aceite:** < 10 minutos, todos os checks verdes
+
 ---
 
 ## Testes e qualidade
@@ -143,12 +178,6 @@ API_AUTH_MODE=iam|apikey
 - **Unitários e integração mockada** com `pytest` e `pytest-cov` (alvo ≥ **85%**).  
 - Lint com **ruff** e type-check com **mypy**.  
 - **GitHub Actions** executa: lint → type → testes → build → cobertura → deploy canário.
-
-```bash
-pytest -q --cov=app --cov-report=term-missing
-ruff check .
-mypy services/api
-```
 
 ---
 
