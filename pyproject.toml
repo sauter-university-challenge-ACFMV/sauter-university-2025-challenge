@@ -1,0 +1,27 @@
+# Configurações das ferramentas de qualidade de código
+
+[tool.ruff]
+# Configuração do Ruff (linting e formatação)
+line-length = 88
+target-version = "py311"
+
+[tool.mypy]  
+# Configuração do MyPy (verificação de tipos)
+python_version = "3.11"
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+# Configuração do Pytest (testes)
+testpaths = ["src/api/tests"]
+
+[tool.coverage.run]
+# Configuração do Coverage
+data_file = "src/api/tests/.coverage"
+
+[tool.coverage.html]
+# Relatório HTML do coverage na pasta tests
+directory = "src/api/tests/htmlcov"
+
+[tool.coverage.report]
+# Configuração do relatório de coverage
+show_missing = true
