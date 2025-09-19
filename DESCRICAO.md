@@ -1,7 +1,7 @@
 # sauter-university-2025-challenge
 
 
-![Architecture](./img/university.drawio.png)
+![Architecture](./docs/img/university.drawio.png)
 
 Sobre o desafio: 
 
@@ -50,3 +50,4 @@ Agente que tira dúvidas sobre a sauter, consultando o site da Sauter (sauter.di
 - modelo spotify 
 
 - Geral de dados 
+
