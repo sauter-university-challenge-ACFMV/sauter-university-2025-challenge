@@ -33,6 +33,19 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_TERRAFORM_SA }}
+          export_default_credentials: true
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Ensure base GCP APIs (bootstrap)
+        env:
+          PROJECT_ID: sauter-university-challenger
+        run: |
+          gcloud services enable serviceusage.googleapis.com \
+                                 cloudresourcemanager.googleapis.com \
+                                 iam.googleapis.com \
+                                 --project "$PROJECT_ID"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
