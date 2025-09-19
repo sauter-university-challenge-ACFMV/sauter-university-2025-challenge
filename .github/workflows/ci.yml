@@ -79,8 +79,7 @@ jobs:
     # Executar testes com cobertura mínima de 85%
     - name: Run tests with coverage
       run: |
-        cd src/api
-        pytest tests/ --cov=. --cov-fail-under=85
+        pytest src/api/tests/ --cov=src/api --cov-report=html --cov-fail-under=85
 
   # Job 4: Construir imagem Docker (só executa se outros jobs passaram)
   docker-build:
