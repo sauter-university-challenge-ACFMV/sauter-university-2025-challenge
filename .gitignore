@@ -45,3 +45,20 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
+
+.venv
+src/infra/envs/dev/.terraform/providers/
+
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Mantenha o lock (é pra versionar)
+!.terraform.lock.hcl
+EOF
