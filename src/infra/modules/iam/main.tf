@@ -13,16 +13,18 @@ resource "google_service_account" "runtime" {
 resource "google_project_iam_member" "tf_roles" {
   for_each = toset([
     "roles/viewer",
-    "roles/storage.objectAdmin",              # Manage objects in GCS, not buckets
-    "roles/artifactregistry.writer",           # Push/pull images, not manage registry
-    "roles/run.developer",                     # Deploy/update Cloud Run services
-    "roles/bigquery.dataEditor",               # Edit BigQuery data, not manage datasets
-    "roles/secretmanager.secretAccessor",      # Access secrets, not manage them
+    "roles/serviceusage.serviceUsageAdmin",  # habilitar APIs via Terraform
+    "roles/storage.admin",                   # criar buckets / lifecycle
+    "roles/artifactregistry.admin",          # criar repo e gerenciar
+    "roles/run.admin",                       # criar/atualizar Cloud Run
+    "roles/bigquery.admin",                  # criar datasets/tables
+    "roles/secretmanager.admin",             # criar segredos e bindings
   ])
   project = var.project_id
   role    = each.value
   member  = "serviceAccount:${google_service_account.terraform.email}"
 }
+
 
 # Allow Terraform to **use** the runtime SA when configuring Cloud Run
 resource "google_service_account_iam_member" "tf_can_use_runtime_sa" {

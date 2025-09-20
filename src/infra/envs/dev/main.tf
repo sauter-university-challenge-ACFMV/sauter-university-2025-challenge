@@ -1,18 +1,19 @@
 locals {
   services = [
     "artifactregistry.googleapis.com",
+    "cloudresourcemanager.googleapis.com",
     "run.googleapis.com",
     "iamcredentials.googleapis.com",
+    "iam.googleapis.com",
     "storage.googleapis.com",
     "bigquery.googleapis.com",
     "monitoring.googleapis.com",
     "logging.googleapis.com",
     "billingbudgets.googleapis.com",
-    "secretmanager.googleapis.com"
+    "secretmanager.googleapis.com",
   ]
 }
 
-# Check if project is correct
 data "google_project" "this" {
   project_id = var.project_id
 }
@@ -36,4 +37,21 @@ module "wif" {
   provider_id = "github"
   github_repo = var.github_repo
   sa_email    = module.iam.terraform_sa_email
+}
+
+module "artifact_registry" {
+  source     = "../../modules/artifact_registry"
+  project_id = var.project_id
+  region     = var.region
+  repo_id    = "apps"
+}
+
+module "cloud_run" {
+  source                = "../../modules/cloud_run"
+  project_id            = var.project_id
+  region                = var.region
+  name                  = "baseline-api"
+  image                 = "us-docker.pkg.dev/cloudrun/container/hello"
+  service_account_email = module.iam.runtime_sa_email
+  allow_unauthenticated = true
 }

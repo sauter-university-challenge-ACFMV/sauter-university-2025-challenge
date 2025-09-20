@@ -9,3 +9,7 @@ output "wif_pool" {
 output "terraform_sa" {
   value = module.iam.terraform_sa_email
 }
+
+output "cloud_run_url" {
+  value = module.cloud_run.url
+}
