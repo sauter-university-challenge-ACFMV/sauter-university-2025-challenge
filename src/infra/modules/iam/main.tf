@@ -31,7 +31,7 @@ resource "google_service_account_iam_member" "tf_can_use_runtime_sa" {
   member             = "serviceAccount:${google_service_account.terraform.email}"
 }
 
-# Em runtime, o Cloud Run precisa ler imagens do Artifact Registry
+# At runtime, Cloud Run needs to read images from Artifact Registry
 resource "google_project_iam_member" "runtime_artifact_reader" {
   project = var.project_id
   role    = "roles/artifactregistry.reader"
