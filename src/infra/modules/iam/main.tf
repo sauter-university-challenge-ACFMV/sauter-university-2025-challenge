@@ -13,11 +13,11 @@ resource "google_service_account" "runtime" {
 resource "google_project_iam_member" "tf_roles" {
   for_each = toset([
     "roles/viewer",
-    "roles/storage.admin",
-    "roles/artifactregistry.admin",
-    "roles/run.admin",
-    "roles/bigquery.admin",
-    "roles/secretmanager.admin",
+    "roles/storage.objectAdmin",              # Manage objects in GCS, not buckets
+    "roles/artifactregistry.writer",           # Push/pull images, not manage registry
+    "roles/run.developer",                     # Deploy/update Cloud Run services
+    "roles/bigquery.dataEditor",               # Edit BigQuery data, not manage datasets
+    "roles/secretmanager.secretAccessor",      # Access secrets, not manage them
   ])
   project = var.project_id
   role    = each.value
