@@ -13,3 +13,7 @@ output "terraform_sa" {
 output "cloud_run_url" {
   value = module.cloud_run.url
 }
+
+output "buckets" {
+  value = module.cloud_storage.names
+}

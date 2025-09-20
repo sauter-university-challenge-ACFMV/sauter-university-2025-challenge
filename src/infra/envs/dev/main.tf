@@ -55,3 +55,10 @@ module "cloud_run" {
   service_account_email = module.iam.runtime_sa_email
   allow_unauthenticated = true
 }
+
+module "cloud_storage" {
+  source     = "../../modules/cloud_storage"
+  project_id = var.project_id
+  location   = var.region
+  env        = "dev"
+}
