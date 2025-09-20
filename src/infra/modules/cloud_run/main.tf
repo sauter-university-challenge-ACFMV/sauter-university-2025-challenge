@@ -7,12 +7,23 @@ resource "google_cloud_run_v2_service" "svc" {
     service_account = var.service_account_email
     containers {
       image = var.image
-      # opcional: port 8080 é o padrão do hello container
     }
+  }
+
+  # Tráfego para rollback (Caso der um problema na nova versão)
+  traffic {
+    percent = 100
+    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
+  }
+
+  # Permite GitHub Actions gerenciar tráfego 
+  lifecycle {
+    ignore_changes = [
+      traffic
+    ]
   }
 }
 
-# Tornar público (invocável sem auth) se desejado
 resource "google_cloud_run_v2_service_iam_binding" "invoker_all" {
   count    = var.allow_unauthenticated ? 1 : 0
   name     = google_cloud_run_v2_service.svc.name
