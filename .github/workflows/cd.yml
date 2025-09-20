@@ -3,7 +3,7 @@ name: CD - Deploy to Cloud Run
 # Quando executar: push para main executa
 on:
   push:
-    branches: [main]
+    branches: [main, 9-t7---cd-para-cloud-run]
   workflow_dispatch:  
     inputs:
       action:
