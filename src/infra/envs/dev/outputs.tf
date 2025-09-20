@@ -17,3 +17,7 @@ output "cloud_run_url" {
 output "buckets" {
   value = module.cloud_storage.names
 }
+
+output "dataset_ids" {
+  value = module.bigquery.dataset_ids
+}

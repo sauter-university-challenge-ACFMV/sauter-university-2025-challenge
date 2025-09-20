@@ -62,3 +62,10 @@ module "cloud_storage" {
   location   = var.region
   env        = "dev"
 }
+
+module "bigquery" {
+  source     = "../../modules/bigquery"
+  project_id = var.project_id
+  location   = var.bq_location    
+  env        = "dev"
+}
