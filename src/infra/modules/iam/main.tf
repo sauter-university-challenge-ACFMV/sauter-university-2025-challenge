@@ -24,7 +24,7 @@ resource "google_project_iam_member" "tf_roles" {
   member  = "serviceAccount:${google_service_account.terraform.email}"
 }
 
-# Permitir que o Terraform **use** a runtime SA ao configurar Cloud Run
+# Allow Terraform to **use** the runtime SA when configuring Cloud Run
 resource "google_service_account_iam_member" "tf_can_use_runtime_sa" {
   service_account_id = google_service_account.runtime.name
   role               = "roles/iam.serviceAccountUser"
