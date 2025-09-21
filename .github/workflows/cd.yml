@@ -24,7 +24,7 @@ permissions:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: southamerica-east1
-  SERVICE_NAME: sauter-api
+  SERVICE_NAME: baseline-api
 
 jobs:
   cd:
