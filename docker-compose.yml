@@ -1,3 +1,4 @@
+# docker-compose.yml
 # Para usar, execute:
 # > docker-compose up -d
 #
@@ -5,9 +6,18 @@
 # > docker exec -it postgres_university psql -U university
 # 
 # Agora você pode fazer consultas sql (no terminal XD)
-version: '3.8'
-
 services:
+  api:
+    build:
+      context: ./src/api
+      dockerfile: Dockerfile
+    command: sh -c "uvicorn main:app --host=0.0.0.0 --port=8000 --reload"
+    container_name: fastapi_university
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src/api:/app:z
+
   postgres:
     image: postgres:16
     container_name: postgres_university
