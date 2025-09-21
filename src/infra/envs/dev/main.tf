@@ -74,6 +74,7 @@ module "monitoring" {
   source      = "../../modules/monitoring"
   project_id  = var.project_id
   group_email = var.alert_group_email
+  service_name = module.cloud_run.service_name
 }
 
 module "budget" {
