@@ -17,6 +17,8 @@ services:
       - "8000:8000"
     volumes:
       - ./src/api:/app:z
+    env_file:
+      - ./src/api/.env
 
   postgres:
     image: postgres:16
