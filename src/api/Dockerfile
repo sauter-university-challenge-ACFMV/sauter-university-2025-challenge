@@ -7,13 +7,11 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Copiar requirements e instalar dependências
-# The context is now 'src/api', so we just copy 'requirements.txt'
-COPY requirements.txt .
+COPY src/api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar código da aplicação
-# '.' (the context) now refers to 'src/api', so 'COPY . .' works perfectly.
-COPY . .
+COPY src/api/ .
 
 # Variáveis de ambiente
 ENV PYTHONPATH=/app
