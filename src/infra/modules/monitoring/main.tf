@@ -164,6 +164,31 @@ resource "google_monitoring_dashboard" "api_health" {
             }
           }
         }
+      }, {
+        width  = 12
+        height = 4
+        yPos   = 16
+        widget = {
+          title = "API Log-Based Server Errors"
+          xyChart = {
+            dataSets = [{
+              timeSeriesQuery = {
+                timeSeriesFilter = {
+                  filter = "metric.type=\"logging.googleapis.com/user/api-server-errors\" resource.type=\"cloud_run_revision\" resource.label.service_name=\"${var.service_name}\""
+                  aggregation = {
+                    alignmentPeriod    = "300s"
+                    perSeriesAligner   = "ALIGN_SUM"
+                    crossSeriesReducer = "REDUCE_SUM"
+                  }
+                }
+              }
+              plotType = "LINE"
+            }]
+            yAxis = {
+              label = "Errors (5 min)"
+            }
+          }
+        }
       }]
     }
   })
