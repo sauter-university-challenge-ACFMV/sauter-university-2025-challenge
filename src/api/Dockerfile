@@ -19,8 +19,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Porta padrão (pode ser alterada caso necessário)
-EXPOSE 8000
+EXPOSE 8080
 
 # This command is overridden by docker-compose, but it's good practice
 # to have a correct default command here.
-CMD ["uvicorn", "main:app", "--host=0.0.0.0", "--port=8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
