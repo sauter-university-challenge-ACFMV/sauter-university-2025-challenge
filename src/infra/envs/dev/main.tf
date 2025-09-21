@@ -66,6 +66,22 @@ module "cloud_storage" {
 module "bigquery" {
   source     = "../../modules/bigquery"
   project_id = var.project_id
-  location   = var.bq_location    
+  location   = var.bq_location
   env        = "dev"
 }
+
+module "monitoring" {
+  source      = "../../modules/monitoring"
+  project_id  = var.project_id
+  group_email = var.alert_group_email
+}
+
+module "budget" {
+  source                 = "../../modules/budget"
+  billing_account        = "012AA0-0BFB09-AC0D0F"
+  project_number         = data.google_project.this.number
+  amount                 = var.dev_budget_amount
+  currency_code          = "BRL"
+  monitoring_channel_ids = [module.monitoring.channel_id]
+}
+

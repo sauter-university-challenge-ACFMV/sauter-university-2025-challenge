@@ -15,3 +15,11 @@ variable "bq_location" {
 variable "github_repo" {
   type = string
 }
+
+variable "dev_budget_amount" {
+  type = number
+}
+
+variable "alert_group_email" {
+  type = string
+}
