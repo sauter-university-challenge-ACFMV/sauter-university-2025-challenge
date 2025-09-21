@@ -7,11 +7,11 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Copiar requirements e instalar dependências
-COPY src/api/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar código da aplicação
-COPY src/api/ .
+COPY . .
 
 # Variáveis de ambiente
 ENV PYTHONPATH=/app

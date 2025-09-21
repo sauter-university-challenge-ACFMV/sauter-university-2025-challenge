@@ -53,7 +53,8 @@ jobs:
           IMAGE_TAG=v${GITHUB_SHA:0:7}
           IMAGE_URL=southamerica-east1-docker.pkg.dev/${{ env.PROJECT_ID }}/apps/${{ env.SERVICE_NAME }}:$IMAGE_TAG
           
-          docker build -f src/api/Dockerfile -t $IMAGE_URL .
+          cd src/api
+          docker build -t $IMAGE_URL .
           docker push $IMAGE_URL
           
           gcloud run deploy ${{ env.SERVICE_NAME }} \
