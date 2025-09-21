@@ -213,14 +213,21 @@ docker build -t university-api .
 
 ## Pipeline CI/CD
 
-### O que é validado automaticamente
+### CI - Continuous Integration
 - **Lint + formatação:** `ruff` verifica estilo e organiza imports
 - **Type checking:** `mypy` valida anotações de tipo  
 - **Testes + cobertura:** `pytest` com cobertura mínima de **85%**
 - **Docker build:** valida containerização da aplicação
 
+### CD - Continuous Deployment
+- **Deploy automático:** Push para `main` → Build → Artifact Registry → Cloud Run
+- **Rollback manual:** Actions → "CD - Deploy to Cloud Run" → escolher `rollback` + revisão
+- **Versionamento:** `v1234567` baseado no commit SHA
+- **Health check:** Verificação automática do endpoint `/health`
+
 ### Configurações centralizadas
-- **`.github/workflows/ci.yml`**: pipeline executado em PRs
+- **`.github/workflows/ci.yml`**: pipeline de validação em PRs
+- **`.github/workflows/cd.yml`**: pipeline de deploy para produção
 - **`pyproject.toml`**: configurações de ruff, mypy e pytest  
 - **Critério de aceite:** < 10 minutos, todos os checks verdes
 

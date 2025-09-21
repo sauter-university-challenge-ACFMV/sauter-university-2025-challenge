@@ -1,0 +1,79 @@
+name: CD - Deploy to Cloud Run
+
+# Quando executar: push para main executa
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  
+    inputs:
+      action:
+        description: 'deploy ou rollback'
+        default: 'deploy'
+        type: choice
+        options: [deploy, rollback]
+      target_revision:
+        description: 'Para rollback: revisão (ex: v1234567)'
+        required: false
+
+# Permissões necessárias para Workload Identity Federation
+permissions:
+  id-token: write
+  contents: read
+
+# Variáveis de ambiente globais
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: southamerica-east1
+  SERVICE_NAME: baseline-api
+
+jobs:
+  cd:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Passo 1: Baixar código do repositório
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Passo 2: Autenticação segura no GCP via WIF
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+
+      # Passo 3: Configurar Docker para Artifact Registry
+      - name: Configure Docker
+        run: gcloud auth configure-docker southamerica-east1-docker.pkg.dev
+
+      # === DEPLOY: Construir e implantar nova versão ===
+      - name: Build and deploy
+        if: github.event_name == 'push' || github.event.inputs.action == 'deploy'
+        run: |
+          IMAGE_TAG=v${GITHUB_SHA:0:7}
+          IMAGE_URL=southamerica-east1-docker.pkg.dev/${{ env.PROJECT_ID }}/apps/${{ env.SERVICE_NAME }}:$IMAGE_TAG
+          
+          cd src/api
+          docker build -t $IMAGE_URL .
+          docker push $IMAGE_URL
+          
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image $IMAGE_URL \
+            --region ${{ env.REGION }} \
+            --allow-unauthenticated \
+            --revision-suffix $IMAGE_TAG \
+            --tag $IMAGE_TAG
+
+      #  ROLLBACK: Voltar para versão anterior caso algo deu errado
+      - name: Rollback
+        if: github.event.inputs.action == 'rollback'
+        run: |
+          gcloud run services update-traffic ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION }} \
+            --to-revisions ${{ github.event.inputs.target_revision }}=100
+
+      #  VERIFICAÇÃO: Mostrar URL do serviço
+      - name: Get service URL
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format 'value(status.url)')
+          echo "Service URL: $URL"
