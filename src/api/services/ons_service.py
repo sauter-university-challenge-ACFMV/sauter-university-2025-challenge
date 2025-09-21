@@ -25,8 +25,8 @@ async def fetch_and_filter_parquet_files(filters: DateFilterDTO) -> list[Parquet
     
     # 1. Filter for PARQUET format
     parquet_resources = [
-        r for r in all_resources 
-        if r.get("format", "").upper() == "PARQUET" and r.get("url")
+        r for r in all_resources
+        if r.get("format", "").lower() == "parquet" and r.get("url")
     ]
 
     # 2. Filter by date using the DTO from the request body
@@ -37,17 +37,17 @@ async def fetch_and_filter_parquet_files(filters: DateFilterDTO) -> list[Parquet
         return [ParquetResourceDTO(**res) for res in parquet_resources]
 
     filtered_by_date = []
+    print(start_date, end_date)
     for resource in parquet_resources:
         name = resource.get("name", "")
         match = re.search(r"\d{4}", name)
+        print(name, match)
         if match:
             resource_year = int(match.group())
         else:
             continue
-        if start_date.year <= resource_year and end_date.year <= resource_year:
-            continue
-        
-        filtered_by_date.append(resource)
+        if start_date.year <= resource_year <= end_date.year:
+            filtered_by_date.append(resource)
 
     # 3. Create a list of DTOs from the final filtered data
     return [ParquetResourceDTO(**res) for res in filtered_by_date]
