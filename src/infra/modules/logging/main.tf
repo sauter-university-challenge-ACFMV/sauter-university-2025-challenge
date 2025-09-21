@@ -1,4 +1,4 @@
-resource "google_logging_project_metric" "api_server_errors" {
+resource "google_logging_metric" "api_server_errors" {
     name        = "api-server-errors"
     project     = var.project_id
     description = "Contador de erros 500 Internal Server Error da API Cloud Run."
