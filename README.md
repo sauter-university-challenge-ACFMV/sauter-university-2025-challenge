@@ -123,7 +123,60 @@ Documentação completa via **OpenAPI** em `/docs` da API.
 
 ---
 
+
+## Como rodar a API usando Docker
+
+Você pode rodar a API facilmente usando Docker e Docker Compose, sem precisar instalar dependências Python localmente.
+
+### 1. Build e start com Docker Compose
+
+No diretório raiz do projeto, execute:
+
+```bash
+docker-compose up --build
+```
+
+Isso irá:
+- Construir a imagem Docker da API (usando o Dockerfile em `src/api/`)
+- Subir o container `fastapi_university` na porta 8000
+- Mapear o código-fonte local para dentro do container (hot reload/desenvolvimento)
+
+### 2. Acessar a API
+
+Acesse a API em: [http://localhost:8000](http://localhost:8000)
+
+Documentação automática (OpenAPI): [http://localhost:8000/docs](http://localhost:8000/docs)
+
+### 3. Parar os containers
+
+Para parar e remover os containers:
+
+```bash
+docker-compose down
+```
+
+### 4. Variáveis de ambiente (opcional)
+
+Se necessário, defina variáveis de ambiente no serviço `api` do `docker-compose.yml` usando a chave `environment:`.
+
+Exemplo:
+
+```yaml
+services:
+   api:
+      # ...
+      environment:
+         - BQ_PROJECT=seu-projeto
+         - BQ_DATASET=seu-dataset
+         - GCS_BUCKET_RAW=seu-bucket
+         - API_AUTH_MODE=apikey
+```
+
+---
+
 ## Como rodar a API localmente (dev)
+
+> ⚠️ Use Python 3.12 ou inferior para desenvolvimento local. Recomenda-se instalar com [pyenv](https://github.com/pyenv/pyenv) ou usar o Python do sistema. Versões superiores podem causar incompatibilidades.
 
 ```bash
 cd src/api

@@ -93,4 +93,6 @@ jobs:
     
     # Construir imagem Docker para validar containerização
     - name: Build Docker image
-      run: docker build -t university-api .
+      run: |
+        cd src/api
+        docker build -t university-api .
