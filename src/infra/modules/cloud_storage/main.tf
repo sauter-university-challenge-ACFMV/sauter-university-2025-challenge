@@ -12,7 +12,9 @@ resource "google_storage_bucket" "buckets" {
   versioning { enabled = true }                         # guarda versões
 
   labels = {
-    env       = var.env
+    env     = var.env
     data_zone = each.key
+    service = "ml-api"
+    owner   = "clauderson-felipe-mari"
   }
 }

@@ -7,6 +7,8 @@ resource "google_bigquery_dataset" "ds" {
   labels = {
     env   = var.env
     tier  = each.value
+    service = "data-processing"
+    owner   = "clauderson-felipe"
   }
 
   # ajustes comuns (opcionais):
