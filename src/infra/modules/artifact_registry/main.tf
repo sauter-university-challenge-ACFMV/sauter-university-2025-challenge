@@ -6,7 +6,7 @@ resource "google_artifact_registry_repository" "docker" {
   description   = "Docker images for Cloud Run"
 
   labels = {
-    env     = var.env
+    env     = "dev"
     service = "image-registry"
     owner   = "felipe-clauderson"
   }
