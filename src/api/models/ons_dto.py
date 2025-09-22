@@ -1,6 +1,8 @@
 from pydantic import BaseModel, HttpUrl, Field
 from datetime import date
 
+# add option to get data by another url
+# add option to save in another bucket
 class DateFilterDTO(BaseModel):
     """
     Input DTO for receiving date filters in the request body.
