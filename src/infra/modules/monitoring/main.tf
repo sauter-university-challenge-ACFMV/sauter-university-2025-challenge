@@ -1,3 +1,62 @@
+/*
+resource "google_monitoring_alert_policy" "error_5xx_alert" {
+  display_name = "API 5xx Error Rate Alert"
+  combiner     = "OR"
+  enabled      = true
+  notification_channels = [google_monitoring_notification_channel.budget_email.id]
+
+  conditions {
+    display_name = "5xx Errors > 0"
+    condition_threshold {
+      filter = "metric.type=\"run.googleapis.com/request/count\" resource.type=\"cloud_run_revision\" resource.label.service_name=\"${var.service_name}\" metric.label.response_code_class=\"5xx\""
+      aggregations {
+        alignment_period     = "60s"
+        per_series_aligner   = "ALIGN_RATE"
+      }
+      comparison      = "COMPARISON_GT"
+      threshold_value = 0
+      duration        = "300s" # 5 minutos
+      trigger {
+        count = 1
+      }
+    }
+  }
+
+  alert_strategy {
+    auto_close = "300s"
+  }
+}
+*/
+
+/*
+resource "google_monitoring_alert_policy" "latency_alert" {
+  display_name = "API Latency Alert"
+  combiner     = "OR"
+  enabled      = true
+  notification_channels = [google_monitoring_notification_channel.budget_email.id]
+
+  conditions {
+    display_name = "High Latency (p95 > 500ms)"
+    condition_threshold {
+      filter          = "metric.type=\"run.googleapis.com/request/latencies\" resource.type=\"cloud_run_revision\" resource.label.service_name=\"${var.service_name}\""
+      aggregations {
+        alignment_period     = "60s"
+        per_series_aligner   = "ALIGN_PERCENTILE_95"
+      }
+      comparison      = "COMPARISON_GT"
+      threshold_value = 500000000
+      duration        = "300s" 
+      trigger {
+        count = 1
+      }
+    }
+  }
+  alert_strategy {
+    auto_close = "300s" 
+  }
+}
+*/
+
 resource "google_monitoring_notification_channel" "budget_email" {
   project      = var.project_id
   display_name = "Budget Alerts"
