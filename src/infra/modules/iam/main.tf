@@ -19,6 +19,8 @@ resource "google_project_iam_member" "tf_roles" {
     "roles/run.admin",                       # criar/atualizar Cloud Run
     "roles/bigquery.admin",                  # criar datasets/tables
     "roles/secretmanager.admin",             # criar segredos e bindings
+    "roles/logging.configWriter",            # Create log sinks and metrics
+    "roles/monitoring.alertPolicyEditor",    # Create alert policies
   ])
   project = var.project_id
   role    = each.value
