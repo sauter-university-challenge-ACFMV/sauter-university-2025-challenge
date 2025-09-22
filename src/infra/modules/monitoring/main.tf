@@ -1,3 +1,4 @@
+/*
 resource "google_monitoring_alert_policy" "error_5xx_alert" {
   display_name = "API 5xx Error Rate Alert"
   combiner     = "OR"
@@ -25,6 +26,9 @@ resource "google_monitoring_alert_policy" "error_5xx_alert" {
     auto_close = "300s"
   }
 }
+*/
+
+/*
 resource "google_monitoring_alert_policy" "latency_alert" {
   display_name = "API Latency Alert"
   combiner     = "OR"
@@ -51,6 +55,8 @@ resource "google_monitoring_alert_policy" "latency_alert" {
     auto_close = "300s" 
   }
 }
+*/
+
 resource "google_monitoring_notification_channel" "budget_email" {
   project      = var.project_id
   display_name = "Budget Alerts"
@@ -65,6 +71,7 @@ resource "google_monitoring_dashboard" "api_health" {
   dashboard_json = jsonencode({
     displayName = "API Health Dashboard"
     mosaicLayout = {
+      columns = 24  
       tiles = [{
         width  = 12
         height = 4
