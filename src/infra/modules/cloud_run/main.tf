@@ -6,7 +6,7 @@ resource "google_cloud_run_v2_service" "svc" {
   labels = {
     env     = var.env
     service = "ml-api"
-    owner   = "adenilson-clauderson"
+    owner   = "adenilson-clauderson-raylandson"
   }
 
   template {

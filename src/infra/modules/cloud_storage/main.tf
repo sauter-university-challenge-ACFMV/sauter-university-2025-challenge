@@ -15,6 +15,6 @@ resource "google_storage_bucket" "buckets" {
     env     = var.env
     data_zone = each.key
     service = "ml-api"
-    owner   = "clauderson-felipe-mari"
+    owner   = "raylandson-felipe-mari"
   }
 }
