@@ -1,3 +1,16 @@
+resource "google_storage_bucket" "logs" {
+  name     = "sauter-university-challenger-dev-logs"
+  location = var.region
+  project  = var.project_id
+  force_destroy = true 
+}
+
+module "logging" {
+  source       = "../../modules/logging"
+  project_id   = var.project_id
+  service_name = module.cloud_run.service_name
+  bucket_name  = google_storage_bucket.logs.name
+}
 locals {
   services = [
     "artifactregistry.googleapis.com",
@@ -74,6 +87,7 @@ module "monitoring" {
   source      = "../../modules/monitoring"
   project_id  = var.project_id
   group_email = var.alert_group_email
+  service_name = module.cloud_run.service_name
 }
 
 module "budget" {
