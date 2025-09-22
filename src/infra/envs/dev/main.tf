@@ -57,6 +57,7 @@ module "artifact_registry" {
   project_id = var.project_id
   region     = var.region
   repo_id    = "apps"
+  env        = var.env
 }
 
 module "cloud_run" {
@@ -67,6 +68,7 @@ module "cloud_run" {
   image                 = "us-docker.pkg.dev/cloudrun/container/hello"
   service_account_email = module.iam.runtime_sa_email
   allow_unauthenticated = true
+  env                   = var.env
 }
 
 module "cloud_storage" {

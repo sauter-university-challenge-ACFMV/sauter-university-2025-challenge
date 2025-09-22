@@ -1,3 +1,4 @@
+env = "dev"
 project_id        = "sauter-university-challenger"
 region            = "southamerica-east1"
 bq_location       = "southamerica-east1"
