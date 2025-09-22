@@ -12,7 +12,7 @@ resource "google_service_account" "runtime" {
 # Papéis do Terraform SA
 resource "google_project_iam_member" "tf_roles" {
   for_each = toset([
-    "roles/viewer",
+    "roles/editor",
     "roles/serviceusage.serviceUsageAdmin",  # habilitar APIs via Terraform
     "roles/storage.admin",                   # criar buckets / lifecycle
     "roles/artifactregistry.admin",          # criar repo e gerenciar
