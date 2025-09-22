@@ -16,4 +16,7 @@ resource "google_storage_bucket_iam_member" "sink_writer" {
 	bucket = var.bucket_name
 	role   = "roles/storage.objectCreator"
 	member = "serviceAccount:${google_logging_project_sink.api_logs_sink.writer_identity}"
+	depends_on = [
+    	google_logging_project_sink.api_logs_sink
+  	]
 }
