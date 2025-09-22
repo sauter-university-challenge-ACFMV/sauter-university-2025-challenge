@@ -6,6 +6,7 @@ import asyncio
 import io
 from datetime import date, datetime
 from models.ons_dto import DateFilterDTO
+from utils.logger import LogLevels, log
 
 async def _download_and_process_parquet(
     client: httpx.AsyncClient, 
@@ -14,36 +15,36 @@ async def _download_and_process_parquet(
     end_date: date
 ) -> pd.DataFrame:
     """Helper to download one parquet file, filter it, and return a DataFrame."""
-    print(f"\n[DEBUG] ==> Processing URL: {url}")
+    log(f"==> Processing URL: {url}", level=LogLevels.DEBUG)
     try:
         response = await client.get(url, timeout=30.0)
         response.raise_for_status()
-        print(f"[DEBUG] ... Download successful ({len(response.content)} bytes).")
+        log(f"Download successful ({len(response.content)} bytes).", level=LogLevels.DEBUG)
         
         with io.BytesIO(response.content) as buffer:
             df = pd.read_parquet(buffer, engine="fastparquet")
-        
-        print(f"[DEBUG] ... Read Parquet file into DataFrame with {len(df)} rows.")
+
+        log(f"Read Parquet file into DataFrame with {len(df)} rows.", level=LogLevels.DEBUG)
 
         filtered_df = filter_by_date(df, start_date, end_date)
 
         return filtered_df
 
     except Exception as e:
-        print(f"[ERROR] !!! Failed to process URL {url}. Reason: {e}")
+        log(f"Failed to process URL {url}. Reason: {e}", level=LogLevels.ERROR)
         return pd.DataFrame()
 
 
 def filter_by_date(df: pd.DataFrame, start_date: date, end_date: date) -> pd.DataFrame:
     """Filter the DataFrame by the given date range on 'ear_data' column."""
     if 'ear_data' not in df.columns:
-        print("[DEBUG] 'ear_data' column not found in DataFrame.")
+        log("'ear_data' column not found in DataFrame.", level=LogLevels.DEBUG)
         return pd.DataFrame()
     
     df['ear_data'] = pd.to_datetime(df['ear_data']).dt.date
     mask = (df['ear_data'] >= start_date) & (df['ear_data'] <= end_date)
     filtered_df = df.loc[mask]
-    print(f"[DEBUG] Filtered DataFrame to {len(filtered_df)} rows between {start_date} and {end_date}.")
+    log(f"Filtered DataFrame to {len(filtered_df)} rows between {start_date} and {end_date}.", level=LogLevels.DEBUG)
     return filtered_df
 
 
@@ -52,10 +53,12 @@ async def process_reservoir_data(filters: DateFilterDTO) -> list[dict]:
     Service to fetch parquet file URLs, download them concurrently, merge,
     filter by date, and return the combined data.
     """
-    print(f"[DEBUG] Service started with filters: start={filters.start_date}, end={filters.end_date}")
+    log(f"Service started with filters: start={filters.start_date}, end={filters.end_date}", level=LogLevels.DEBUG)
     
     ons_api_url = os.environ.get("ONS_API_URL")
     if not ons_api_url:
+        # For critical errors like this, raising an exception is better than just logging
+        log("ONS_API_URL environment variable not set.", level=LogLevels.ERROR)
         raise ValueError("ONS_API_URL environment variable not set.")
 
     async with httpx.AsyncClient() as client:
@@ -79,7 +82,7 @@ async def process_reservoir_data(filters: DateFilterDTO) -> list[dict]:
                     if start_year <= resource_year <= end_year:
                         parquet_urls_to_download.append(resource["url"])
         
-        print(f"[DEBUG] Found {len(parquet_urls_to_download)} parquet files for years {start_year}-{end_year}.")
+        log(f"Found {len(parquet_urls_to_download)} parquet files for years {start_year}-{end_year}.")
 
         if not parquet_urls_to_download:
             return []
@@ -92,11 +95,11 @@ async def process_reservoir_data(filters: DateFilterDTO) -> list[dict]:
 
         valid_dataframes = [df for df in list_of_dataframes if not df.empty]
         if not valid_dataframes:
-            print("[DEBUG] No valid dataframes found after processing all files.")
+            log("No valid dataframes found after processing all files.", level=LogLevels.DEBUG)
             return []
         
-        print(f"[DEBUG] Merging {len(valid_dataframes)} dataframes into one.")
+        log(f"Merging {len(valid_dataframes)} dataframes into one.", level=LogLevels.DEBUG)
         merged_df = pd.concat(valid_dataframes, ignore_index=True)
-        print(f"[DEBUG] Final merged dataframe has {len(merged_df)} rows. Converting to dict.")
+        log(f"Final merged dataframe has {len(merged_df)} rows. Converting to dict.", level=LogLevels.DEBUG)
 
     return merged_df.to_dict('records')
