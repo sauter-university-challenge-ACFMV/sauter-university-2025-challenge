@@ -26,7 +26,7 @@ async def _download_and_process_parquet(
 
         log(f"Read Parquet file into DataFrame with {len(df)} rows.", level=LogLevels.DEBUG)
 
-        filtered_df = filter_by_date(df, start_date, end_date)
+        filtered_df = filter_parquet_by_date(df, start_date, end_date)
 
         return filtered_df
 
@@ -35,7 +35,7 @@ async def _download_and_process_parquet(
         return pd.DataFrame()
 
 
-def filter_by_date(df: pd.DataFrame, start_date: date, end_date: date) -> pd.DataFrame:
+def filter_parquet_by_date(df: pd.DataFrame, start_date: date, end_date: date) -> pd.DataFrame:
     """Filter the DataFrame by the given date range on 'ear_data' column."""
     if 'ear_data' not in df.columns:
         log("'ear_data' column not found in DataFrame.", level=LogLevels.DEBUG)
@@ -54,8 +54,11 @@ async def process_reservoir_data(filters: DateFilterDTO) -> list[dict]:
     filter by date, and return the combined data.
     """
     log(f"Service started with filters: start={filters.start_date}, end={filters.end_date}", level=LogLevels.DEBUG)
-    
-    ons_api_url = os.environ.get("ONS_API_URL")
+    package = "ear-diario-por-reservatorio" if not filters.package else filters.package
+    ons_base_api_url = os.environ.get("ONS_API_URL")
+    ons_api_url = f"{ons_base_api_url}?id={package}" if ons_base_api_url else None
+    log(f"Using ONS API URL: {ons_api_url}", level=LogLevels.DEBUG)
+    log(f"Using package: {package}", level=LogLevels.DEBUG)
     if not ons_api_url:
         # For critical errors like this, raising an exception is better than just logging
         log("ONS_API_URL environment variable not set.", level=LogLevels.ERROR)

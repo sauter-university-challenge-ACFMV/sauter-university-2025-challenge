@@ -9,4 +9,5 @@ class DateFilterDTO(BaseModel):
     """
     start_date: date | None = Field(None, description="Filter for files modified on or after this date (YYYY-MM-DD).")
     end_date: date | None = Field(None, description="Filter for files modified on or before this date (YYYY-MM-DD).")
+    package: str | None = Field(None, description="Package name to filter resources.")
 
