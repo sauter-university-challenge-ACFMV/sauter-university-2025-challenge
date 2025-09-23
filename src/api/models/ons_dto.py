@@ -15,6 +15,3 @@ class DateFilterDTO(BaseModel):
         None, description="Filter for files modified on or before this year (YYYY)."
     )
     package: str | None = Field(None, description="Package name to filter resources.")
-    data_type: str | None = Field(
-        None, description="Type of data to filter ('parquet', 'csv' or 'xlsx')."
-    )

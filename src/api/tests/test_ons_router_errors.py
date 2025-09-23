@@ -35,7 +35,6 @@ def _payload() -> dict:
         "start_year": 2022,
         "end_year": 2023,
         "package": "ear-diario-por-reservatorio",
-        "data_type": "parquet",
     }
 
 

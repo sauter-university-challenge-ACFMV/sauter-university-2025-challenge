@@ -158,12 +158,10 @@ class OnsService:
                 parquet_resources_to_download = []
                 start_year = filters.start_year
                 end_year = filters.end_year
-                data_type = (
-                    filters.data_type.lower() if filters.data_type else "parquet"
-                )
+                preferred_formats = ["parquet", "csv", "xlsx"]
 
                 log(
-                    f"Filtering resources for years {start_year}-{end_year} and type {data_type}",
+                    f"Filtering resources for years {start_year}-{end_year} with preferred formats {preferred_formats}",
                     level=LogLevel.DEBUG,
                 )
 
@@ -175,26 +173,47 @@ class OnsService:
                     if end_year is None:
                         end_year = now_year
 
+                # Guard against None values for years
+                if start_year is None or end_year is None:
+                    now_year = datetime.now().year
+                    if start_year is None:
+                        start_year = now_year
+                    if end_year is None:
+                        end_year = now_year
+
+                # Build a per-year best-format selection
+                by_year: dict[int, dict] = {}
                 for resource in all_resources:
-                    if resource.get("format", "").lower() == data_type and resource.get(
-                        "url"
-                    ):
-                        name = resource.get("name", "")
-                        match = re.search(r"(\d{4})", name)
-                        if match:
-                            resource_year = int(match.group(1))
-                            if start_year <= resource_year <= end_year:
-                                download_info = DownloadInfo(
-                                    url=resource["url"],
-                                    year=resource_year,
-                                    package=package,
-                                    data_type=data_type,
-                                )
-                                parquet_resources_to_download.append(download_info)
-                                log(
-                                    f"Added resource for year {resource_year}: {name}",
-                                    level=LogLevel.DEBUG,
-                                )
+                    fmt = resource.get("format", "").lower()
+                    url = resource.get("url")
+                    if not url or fmt not in preferred_formats:
+                        continue
+                    name = resource.get("name", "")
+                    match = re.search(r"(\d{4})", name)
+                    if not match:
+                        continue
+                    resource_year = int(match.group(1))
+                    if resource_year < start_year or resource_year > end_year:
+                        continue
+                    rank = preferred_formats.index(fmt)
+                    current = by_year.get(resource_year)
+                    if current is None or rank < current["rank"]:
+                        by_year[resource_year] = {"resource": resource, "rank": rank}
+
+                for resource_year, item in sorted(by_year.items()):
+                    chosen = item["resource"]
+                    fmt = chosen.get("format", "").lower()
+                    download_info = DownloadInfo(
+                        url=chosen["url"],
+                        year=resource_year,
+                        package=package,
+                        data_type=fmt,
+                    )
+                    parquet_resources_to_download.append(download_info)
+                    log(
+                        f"Added resource for year {resource_year}: {chosen.get('name','')}",
+                        level=LogLevel.DEBUG,
+                    )
 
                 log(
                     f"Found {len(parquet_resources_to_download)} files for years {start_year}-{end_year}",
@@ -203,7 +222,7 @@ class OnsService:
 
                 if not parquet_resources_to_download:
                     log(
-                        f"No files of type '{data_type}' found for the specified date range",
+                        "No files found for the specified date range",
                         level=LogLevel.ERROR,
                     )
                     return []

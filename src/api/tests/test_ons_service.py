@@ -75,7 +75,6 @@ def test_process_reservoir_data_success_filters_and_downloads(monkeypatch: Any) 
         start_year=2022,
         end_year=2023,
         package="ear-diario-por-reservatorio",
-        data_type="parquet",
     )
     result = asyncio.run(service.process_reservoir_data(filters))
 
@@ -129,7 +128,6 @@ def test_process_reservoir_data_no_resources(monkeypatch: Any) -> None:
         start_year=2022,
         end_year=2023,
         package="ear-diario-por-reservatorio",
-        data_type="parquet",
     )
 
     result = asyncio.run(service.process_reservoir_data(filters))
@@ -180,7 +178,6 @@ def test_missing_env_raises_value_error(monkeypatch: Any) -> None:
         start_year=2022,
         end_year=2022,
         package="ear-diario-por-reservatorio",
-        data_type="parquet",
     )
     with pytest.raises(ValueError):
         # Run in event loop because it's async

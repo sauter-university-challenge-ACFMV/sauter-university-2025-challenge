@@ -89,9 +89,7 @@ def test_process_reservoir_data_partial_success(monkeypatch: Any) -> None:
 
     monkeypatch.setattr(s, "_download_parquet", fake_download)
 
-    filters = DateFilterDTO(
-        start_year=2022, end_year=2023, package="pkg", data_type="parquet"
-    )
+    filters = DateFilterDTO(start_year=2022, end_year=2023, package="pkg")
     out = asyncio.run(s.process_reservoir_data(filters))
     assert len(out) == 1
     assert out[0]["url"].endswith("2022.parquet")
@@ -144,8 +142,6 @@ def test_process_reservoir_data_defaults_years(monkeypatch: Any) -> None:
 
     monkeypatch.setattr(s, "_download_parquet", fake_download_ok)
 
-    filters = DateFilterDTO(
-        start_year=None, end_year=None, package="pkg", data_type="parquet"
-    )
+    filters = DateFilterDTO(start_year=None, end_year=None, package="pkg")
     out = asyncio.run(s.process_reservoir_data(filters))
     assert len(out) == 1

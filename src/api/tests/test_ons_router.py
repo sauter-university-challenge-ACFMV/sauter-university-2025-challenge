@@ -56,7 +56,6 @@ def test_filter_parquet_files_endpoint_success(
         "start_year": 2022,
         "end_year": 2023,
         "package": "ear-diario-por-reservatorio",
-        "data_type": "parquet",
     }
     r = client.post("/ons/filter-parquet-files", json=payload)
     assert r.status_code == 200

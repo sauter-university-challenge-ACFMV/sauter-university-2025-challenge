@@ -101,7 +101,7 @@ def test_process_reservoir_data_missing_env(monkeypatch: Any) -> None:
     monkeypatch.setattr(mod, "GCSFileRepository", FakeRepo, raising=True)
 
     s = OnsService()
-    df = DateFilterDTO(start_year=2020, end_year=2020, package="p", data_type="parquet")
+    df = DateFilterDTO(start_year=2020, end_year=2020, package="p")
     try:
         asyncio.run(s.process_reservoir_data(df))
         assert False, "should raise"
