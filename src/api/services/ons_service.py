@@ -90,7 +90,7 @@ class OnsService():
         Service to fetch parquet file URLs, download them concurrently, save to GCS bucket,
         and return the successful downloads information.
         """
-        log(f"Service started with filters: start={filters.start_date}, end={filters.end_date}", level=LogLevels.INFO)
+        log(f"Service started with filters: start={filters.start_year}, end={filters.end_year}, package={filters.package}, data_type={filters.data_type}", level=LogLevels.INFO)
         
         package = filters.package if filters.package else "ear-diario-por-reservatorio"
         ons_base_api_url = os.environ.get("ONS_API_URL")
@@ -121,13 +121,14 @@ class OnsService():
                     return []
                 
                 parquet_resources_to_download = []
-                start_year = filters.start_date.year
-                end_year = filters.end_date.year
-                
+                start_year = filters.start_year
+                end_year = filters.end_year
+                data_type = filters.data_type.lower() if filters.data_type else "parquet"
+
                 log(f"Filtering resources for years {start_year}-{end_year}", level=LogLevels.DEBUG)
                 
                 for resource in all_resources:
-                    if resource.get("format", "").lower() == "parquet" and resource.get("url"):
+                    if resource.get("format", "").lower() == data_type and resource.get("url"):
                         name = resource.get("name", "")
                         match = re.search(r"(\d{4})", name)
                         if match:
