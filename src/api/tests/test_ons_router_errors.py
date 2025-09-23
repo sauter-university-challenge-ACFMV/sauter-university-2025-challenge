@@ -1,6 +1,33 @@
-from typing import Any
+# src/api/tests/test_ons_router_errors.py
+
+from typing import Any, Generator
+import pytest
 from fastapi.testclient import TestClient
-from main import app
+import httpx
+
+
+# Fixture para simular o GCS e evitar a autenticação real
+@pytest.fixture(autouse=True)
+def mock_gcs_before_app_import(monkeypatch: Any) -> None:
+    class FakeGCS:
+        def __init__(self) -> None:
+            self.bucket_name = "fake-bucket"
+
+        def save(self, file: Any, filename: str) -> str:
+            return f"gs://{self.bucket_name}/{filename}"
+
+    import services.ons_service as service_module
+
+    monkeypatch.setattr(service_module, "GCSFileRepository", FakeGCS)
+
+
+# Fixture que fornece um TestClient seguro
+@pytest.fixture
+def client() -> Generator[TestClient, None, None]:
+    from main import app  # Importa o app DEPOIS do mock ser aplicado
+
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 def _payload() -> dict:
@@ -12,54 +39,50 @@ def _payload() -> dict:
     }
 
 
-def test_value_error_translates_to_500(monkeypatch: Any) -> None:
+def test_value_error_translates_to_500(monkeypatch: Any, client: TestClient) -> None:
     from services.ons_service import OnsService
 
-    async def fake(_self, filters):  # type: ignore[no-untyped-def]
+    async def fake(_self: Any, filters: Any) -> None:
         raise ValueError("bad")
 
     monkeypatch.setattr(OnsService, "process_reservoir_data", fake)
-    client = TestClient(app)
     r = client.post("/ons/filter-parquet-files", json=_payload())
     assert r.status_code == 500
 
 
-def test_request_error_translates_to_503(monkeypatch: Any) -> None:
+def test_request_error_translates_to_503(monkeypatch: Any, client: TestClient) -> None:
     from services.ons_service import OnsService
-    import httpx
 
-    async def fake(_self, filters):  # type: ignore[no-untyped-def]
+    async def fake(_self: Any, filters: Any) -> None:
         raise httpx.RequestError("net")
 
     monkeypatch.setattr(OnsService, "process_reservoir_data", fake)
-    client = TestClient(app)
     r = client.post("/ons/filter-parquet-files", json=_payload())
     assert r.status_code == 503
 
 
-def test_http_status_error_propagates_status(monkeypatch: Any) -> None:
+def test_http_status_error_propagates_status(
+    monkeypatch: Any, client: TestClient
+) -> None:
     from services.ons_service import OnsService
-    import httpx
 
     class Resp:
         status_code = 418
 
-    async def fake(_self, filters):  # type: ignore[no-untyped-def]
-        raise httpx.HTTPStatusError("teapot", request=None, response=Resp())
+    async def fake(_self: Any, filters: Any) -> None:
+        raise httpx.HTTPStatusError("teapot", request=None, response=Resp())  # type: ignore
 
     monkeypatch.setattr(OnsService, "process_reservoir_data", fake)
-    client = TestClient(app)
     r = client.post("/ons/filter-parquet-files", json=_payload())
     assert r.status_code == 418
 
 
-def test_generic_error_becomes_500(monkeypatch: Any) -> None:
+def test_generic_error_becomes_500(monkeypatch: Any, client: TestClient) -> None:
     from services.ons_service import OnsService
 
-    async def fake(_self, filters):  # type: ignore[no-untyped-def]
+    async def fake(_self: Any, filters: Any) -> None:
         raise RuntimeError("boom")
 
     monkeypatch.setattr(OnsService, "process_reservoir_data", fake)
-    client = TestClient(app)
     r = client.post("/ons/filter-parquet-files", json=_payload())
     assert r.status_code == 500

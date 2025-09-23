@@ -1,8 +1,11 @@
+# src/api/tests/test_main.py
+
 import pytest
 from fastapi.testclient import TestClient
 from typing import Any, Generator
 
 
+# Fixture única para mockar o GCS, aplicada a todos os testes neste arquivo.
 @pytest.fixture(autouse=True)
 def mock_gcs_repository(monkeypatch: Any) -> None:
     """Simula o GCSFileRepository para evitar autenticação real durante os testes."""
@@ -19,6 +22,7 @@ def mock_gcs_repository(monkeypatch: Any) -> None:
     monkeypatch.setattr(ons_service_module, "GCSFileRepository", FakeGCSFileRepository)
 
 
+# Fixture única para fornecer o cliente de teste.
 @pytest.fixture
 def client() -> Generator[TestClient, None, None]:
     """Fornece um TestClient com as dependências já mockadas."""
@@ -28,10 +32,20 @@ def client() -> Generator[TestClient, None, None]:
         yield test_client
 
 
+# --- Testes combinados de ambos os arquivos ---
+
+
 def test_read_main(client: TestClient) -> None:
-    """
-    Testa o endpoint principal usando um cliente com dependências simuladas.
-    """
+    """Testa o endpoint principal ('/') usando um cliente com dependências simuladas."""
     response = client.get("/")
     assert response.status_code == 200
     assert response.json() == {"message": "Hello World"}
+
+
+def test_openapi_and_docs(client: TestClient) -> None:
+    """Testa os endpoints de documentação gerados automaticamente pela FastAPI."""
+    response = client.get("/openapi.json")
+    assert response.status_code == 200
+
+    response = client.get("/docs")
+    assert response.status_code == 200

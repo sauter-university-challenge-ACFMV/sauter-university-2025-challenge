@@ -245,7 +245,7 @@ GOOGLE_CREDENTIALS_JSON='{"type": "service_account", "project_id": "seu-gcp-proj
 ```bash
 # Lint e formatação
 ruff check src/
-ruff format src/
+ruff check --fix src/
 
 # Type checking  
 mypy src/ --config-file=pyproject.toml

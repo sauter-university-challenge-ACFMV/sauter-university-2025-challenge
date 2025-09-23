@@ -1,4 +1,3 @@
-import os
 import io
 from typing import Any
 

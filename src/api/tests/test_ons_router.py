@@ -1,11 +1,36 @@
+# src/api/tests/test_ons_router.py
+
 import os
-from typing import Any
+from typing import Any, Generator
+import pytest
 from fastapi.testclient import TestClient
-from main import app
 
 
-def test_root_and_health_endpoints() -> None:
-    client = TestClient(app)
+# Fixture para simular o GCS e evitar a autenticação real
+@pytest.fixture(autouse=True)
+def mock_gcs_before_app_import(monkeypatch: Any) -> None:
+    class FakeGCS:
+        def __init__(self) -> None:
+            self.bucket_name = "fake-bucket"
+
+        def save(self, file: Any, filename: str) -> str:
+            return f"gs://{self.bucket_name}/{filename}"
+
+    import services.ons_service as service_module
+
+    monkeypatch.setattr(service_module, "GCSFileRepository", FakeGCS)
+
+
+# Fixture que fornece um TestClient seguro
+@pytest.fixture
+def client() -> Generator[TestClient, None, None]:
+    from main import app  # Importa o app DEPOIS do mock ser aplicado
+
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+def test_root_and_health_endpoints(client: TestClient) -> None:
     r = client.get("/")
     assert r.status_code == 200
     assert r.json()["message"] == "Hello World"
@@ -15,7 +40,9 @@ def test_root_and_health_endpoints() -> None:
     assert r.json()["status"] == "healthy"
 
 
-def test_filter_parquet_files_endpoint_success(monkeypatch: Any) -> None:
+def test_filter_parquet_files_endpoint_success(
+    monkeypatch: Any, client: TestClient
+) -> None:
     from services.ons_service import OnsService
 
     os.environ["ONS_API_URL"] = "https://example.com/api"
@@ -25,7 +52,6 @@ def test_filter_parquet_files_endpoint_success(monkeypatch: Any) -> None:
 
     monkeypatch.setattr(OnsService, "process_reservoir_data", fake_process)
 
-    client = TestClient(app)
     payload = {
         "start_year": 2022,
         "end_year": 2023,

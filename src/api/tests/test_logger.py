@@ -1,4 +1,3 @@
-from typing import Any
 from _pytest.capture import CaptureFixture
 from utils.logger import log, LogLevel
 
