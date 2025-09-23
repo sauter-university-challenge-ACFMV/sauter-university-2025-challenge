@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from enum import Enum
 from types import FrameType
-from typing import Any, Optional
+from typing import Optional
 
 class LogColors:
     """A class to hold ANSI color codes for terminal output."""

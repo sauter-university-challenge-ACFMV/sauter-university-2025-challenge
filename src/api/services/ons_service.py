@@ -1,7 +1,7 @@
 import os
 import re
 import httpx
-import pandas as pd  # type: ignore[import-not-found]
+import pandas as pd  # type: ignore[import-untyped]
 import asyncio
 
 from pydantic import BaseModel

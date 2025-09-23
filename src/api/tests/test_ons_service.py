@@ -12,7 +12,7 @@ def test_process_reservoir_data_success_filters_and_downloads(monkeypatch: Any) 
 
     # Fake repository to avoid real GCS client
     class FakeRepo:
-        def __init__(self):
+        def __init__(self) -> None:
             self.bucket_name = "test-bucket"
         def save(self, file: Any, filename: str) -> str:
             return f"gs://{self.bucket_name}/{filename}"
@@ -29,14 +29,14 @@ def test_process_reservoir_data_success_filters_and_downloads(monkeypatch: Any) 
     ]
 
     class _Resp:
-        def __init__(self, json_obj: dict[str, Any]):
+        def __init__(self, json_obj: dict[str, Any]) -> None:
             self._json = json_obj
-        def raise_for_status(self):
+        def raise_for_status(self) -> None:
             return None
         def json(self) -> dict[str, Any]:
             return self._json
 
-    async def fake_get(self: Any, url: str, *args: Any, **kwargs: Any):
+    async def fake_get(self: Any, url: str, *args: Any, **kwargs: Any) -> _Resp:
         return _Resp({"result": {"resources": resources}})
 
     # Patch httpx.AsyncClient.get
@@ -72,7 +72,7 @@ def test_process_reservoir_data_no_resources(monkeypatch: Any) -> None:
 
     # Fake repository
     class FakeRepo:
-        def __init__(self):
+        def __init__(self) -> None:
             self.bucket_name = "test-bucket"
         def save(self, file: Any, filename: str) -> str:
             return f"gs://{self.bucket_name}/{filename}"
@@ -83,12 +83,12 @@ def test_process_reservoir_data_no_resources(monkeypatch: Any) -> None:
     class _Resp:
         def __init__(self, json_obj: dict[str, Any]):
             self._json = json_obj
-        def raise_for_status(self):
+        def raise_for_status(self) -> None:
             return None
         def json(self) -> dict[str, Any]:
             return self._json
 
-    async def fake_get(self: Any, url: str, *args: Any, **kwargs: Any):
+    async def fake_get(self: Any, url: str, *args: Any, **kwargs: Any) -> _Resp:
         return _Resp({"result": {"resources": []}})
 
     import httpx
@@ -105,7 +105,7 @@ def test_process_reservoir_data_no_resources(monkeypatch: Any) -> None:
 def test_build_gcs_path_uses_year_partition(monkeypatch: Any) -> None:
     # Fake repository to bypass real GCS init
     class FakeRepo:
-        def __init__(self):
+        def __init__(self) -> None:
             self.bucket_name = "test-bucket"
         def save(self, file: Any, filename: str) -> str:
             return f"gs://{self.bucket_name}/{filename}"
@@ -124,7 +124,7 @@ def test_missing_env_raises_value_error(monkeypatch: Any) -> None:
         del os.environ["ONS_API_URL"]
     # Fake repository
     class FakeRepo:
-        def __init__(self):
+        def __init__(self) -> None:
             self.bucket_name = "test-bucket"
         def save(self, file: Any, filename: str) -> str:
             return f"gs://{self.bucket_name}/{filename}"
