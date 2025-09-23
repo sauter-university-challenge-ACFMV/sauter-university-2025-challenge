@@ -1,5 +1,4 @@
-from pydantic import BaseModel, HttpUrl, Field
-from datetime import date
+from pydantic import BaseModel, Field
 
 # add option to get data by another url
 # add option to save in another bucket

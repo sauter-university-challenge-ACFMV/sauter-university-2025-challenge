@@ -1,6 +1,9 @@
 import inspect
 import os
 from datetime import datetime
+from enum import Enum
+from types import FrameType
+from typing import Any, Optional
 
 class LogColors:
     """A class to hold ANSI color codes for terminal output."""
@@ -11,50 +14,55 @@ class LogColors:
     GREEN = '\033[92m'
     MAGENTA = '\033[95m'
 
-class LogLevels:
+class LogLevel(str, Enum):
     INFO = "INFO"
     ERROR = "ERROR"
     DEBUG = "DEBUG"
 
-def log(message: str, level: LogLevels = LogLevels.DEBUG) -> None:
+def log(message: str, level: LogLevel = LogLevel.DEBUG) -> None:
     """
     Prints a formatted log message with timestamp, caller script, line number, and colors.
     
     Args:
         message (str): The message to log.
-        level (str): The log level (e.g., "INFO", "ERROR", "DEBUG"). 
+        level (LogLevel): The log level (e.g., "INFO", "ERROR", "DEBUG"). 
                      This determines the message color.
     """
-    caller_frame = inspect.currentframe().f_back
+    current: Optional[FrameType] = inspect.currentframe()
+    caller_frame: Optional[FrameType] = current.f_back if current and current.f_back else None
     
-    frame_info = inspect.getframeinfo(caller_frame)
-    filename = os.path.basename(frame_info.filename)
-    lineno = frame_info.lineno
+    if caller_frame is not None:
+        frame_info = inspect.getframeinfo(caller_frame)
+        filename = os.path.basename(frame_info.filename)
+        lineno = frame_info.lineno
+    else:
+        filename = "<unknown>"
+        lineno = 0
     
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    color_map = {
-        LogLevels.INFO: LogColors.GREEN,
-        LogLevels.ERROR: LogColors.RED,
-        LogLevels.DEBUG: LogColors.MAGENTA,
+    color_map: dict[LogLevel, str] = {
+        LogLevel.INFO: LogColors.GREEN,
+        LogLevel.ERROR: LogColors.RED,
+        LogLevel.DEBUG: LogColors.MAGENTA,
     }
-    message_color = color_map.get(level, LogColors.RESET)
+    message_color: str = color_map.get(level, LogColors.RESET)
 
     print(
         f"{LogColors.YELLOW}{timestamp}{LogColors.RESET} | "
         f"{LogColors.CYAN}{filename}:{lineno}{LogColors.RESET} - "
-        f"[{message_color}{level.upper()}{LogColors.RESET}] {message}"
+        f"[{message_color}{level.value}{LogColors.RESET}] {message}"
     )
 
 if __name__ == "__main__":
     print("--- Running Log Examples ---")
     
     my_variable = 42
-    log(f"This is an informational message. The value is {my_variable}.")
+    log(f"This is an informational message. The value is {my_variable}.", level=LogLevel.INFO)
     
     try:
         result = my_variable / 0
     except ZeroDivisionError as e:
-        log(f"An error occurred: {e}", level="ERROR")
+        log(f"An error occurred: {e}", level=LogLevel.ERROR)
         
-    log("This is a debug message for troubleshooting.", level="DEBUG")
+    log("This is a debug message for troubleshooting.", level=LogLevel.DEBUG)

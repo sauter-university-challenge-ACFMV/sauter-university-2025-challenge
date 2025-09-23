@@ -1,10 +1,13 @@
 import os
-from fastapi import Body, FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
 import uvicorn
 from datetime import date
-
 from routers import ons_router
+from dotenv import load_dotenv
+
+# carrega o arquivo .env que está no mesmo diretório do main.py
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
 app = FastAPI(
     title="ONS Data Fetcher API",

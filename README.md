@@ -174,23 +174,71 @@ services:
 
 ---
 
-## Como rodar a API localmente (dev)
+## Como rodar a API localmente (dev) com uv
 
-> ⚠️ Use Python 3.12 ou inferior para desenvolvimento local. Recomenda-se instalar com [pyenv](https://github.com/pyenv/pyenv) ou usar o Python do sistema. Versões superiores podem causar incompatibilidades.
+> Recomendado usar o [uv](https://github.com/astral-sh/uv), que é muito mais rápido que o pip/pip-tools. Caso não queira instalar o `uv`, você ainda pode usar `pip` normalmente.
 
+1) Instale o `uv` (uma opção):
 ```bash
-cd src/api
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-# API será implementada pela equipe - por enquanto só estrutura para CI
+# macOS/Linux
+curl -fsSL https://astral.sh/uv/install.sh | sh
+
+# Windows (PowerShell)
+(Invoke-WebRequest -Uri https://astral.sh/uv/install.ps1 -UseBasicParsing).Content | powershell -
 ```
 
-Variáveis de ambiente comuns:
+2) Crie o ambiente e instale as dependências:
 ```bash
-BQ_PROJECT=...
-BQ_DATASET=...
-GCS_BUCKET_RAW=...
-API_AUTH_MODE=iam|apikey
+cd src/api
+uv venv -p 3.12 .venv
+# Linux/macOS: source .venv/bin/activate
+# Windows (PowerShell): .venv\Scripts\Activate.ps1
+uv pip install -r requirements.txt
+```
+
+3) Configure variáveis de ambiente:
+```bash
+cp .env.example .env  # Edite os valores conforme necessário
+```
+
+4) Rode a API:
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+### Variáveis de ambiente da API
+
+- **ONS_API_URL**: URL base do dataset ONS (CKAN) que lista os recursos PARQUET. Ex.: `https://dados.ons.org.br/api/3/action/package_show`
+
+Exemplo (`src/api/.env.example`):
+```bash
+# ==================================
+# Configurações da API da ONS
+# ==================================
+# Endpoint CKAN para recuperar os recursos do pacote (PARQUETs por ano)
+ONS_API_URL=https://dados.ons.org.br/api/3/action/package_show
+
+# ==================================
+# Configurações do Google Cloud Storage
+# ==================================
+# Nome do bucket de destino no GCS
+GCS_BUCKET_NAME="seu-nome-de-bucket-aqui"
+
+GOOGLE_APPLICATION_CREDENTIALS="aaaa"
+GOOGLE_CLOUD_PROJECT="bbb"
+
+# ==================================
+# Configurações de autenticação do Google Cloud
+# ==================================
+# MÉTODO PRINCIPAL: Cole o conteúdo do seu arquivo JSON de credenciais em uma ÚNICA LINHA, dentro de aspas simples.
+# Dica: Você pode usar um "JSON minifier" online para remover quebras de linha antes de colar.
+GOOGLE_CREDENTIALS_JSON='{"type": "service_account", "project_id": "seu-gcp-project-id", "private_key_id": "...", "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n", "client_email": "...", "client_id": "...", "auth_uri": "...", "token_uri": "...", "auth_provider_x509_cert_url": "...", "client_x509_cert_url": "..."}'
+
+# --- Alternativas (mantenha comentado se estiver usando o método acima) ---
+# Opção 2: Caminho para o arquivo de credenciais
+# GOOGLE_APPLICATION_CREDENTIALS="/caminho/completo/para/sua/chave.json"
+
+
 ```
 
 ### Validação local (antes de fazer PR)
