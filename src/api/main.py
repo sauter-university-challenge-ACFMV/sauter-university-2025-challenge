@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import uvicorn
 from datetime import date
-from routers import ons_router
+from routers.ons_router import create_router
 from dotenv import load_dotenv
 
 # carrega o arquivo .env que está no mesmo diretório do main.py
@@ -15,7 +15,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
-app.include_router(ons_router.router)
+app.include_router(create_router())
 
 
 class DataFilter(BaseModel):

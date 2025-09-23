@@ -1,8 +1,9 @@
 import os
+import io
 from typing import Any
 
 
-def test_gcs_repository_env_paths(monkeypatch) -> None:
+def test_gcs_repository_env_paths(monkeypatch: Any) -> None:
     # Avoid hitting real GCS by monkeypatching storage and service_account
     class FakeClient:
         def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -64,18 +65,11 @@ def test_gcs_repository_env_paths(monkeypatch) -> None:
     repo = g.GCSFileRepository()
 
     # upload/save path flow
-    class F:
-        def __init__(self) -> None:
-            self._b = b"x"
-
-        def read(self) -> bytes:
-            return self._b
-
-    url = repo.save(F(), "path/file.bin")
+    url = repo.save(io.BytesIO(b"x"), "path/file.bin")
     assert url.startswith("gs://test-bucket/")
 
 
-def test_gcs_repository_json_credentials(monkeypatch) -> None:
+def test_gcs_repository_json_credentials(monkeypatch: Any) -> None:
     class FakeClient:
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             pass
@@ -109,11 +103,11 @@ def test_gcs_repository_json_credentials(monkeypatch) -> None:
     monkeypatch.setattr(g, "service_account", type("SA", (), {"Credentials": FakeCred}))
 
     repo = g.GCSFileRepository()
-    url = repo.save(type("F", (), {"read": lambda self: b"x"})(), "a.bin")
+    url = repo.save(io.BytesIO(b"x"), "a.bin")
     assert url.startswith("gs://test-bucket/")
 
 
-def test_gcs_repository_file_credentials(monkeypatch, tmp_path) -> None:
+def test_gcs_repository_file_credentials(monkeypatch: Any, tmp_path: Any) -> None:
     class FakeClient:
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             pass
@@ -150,5 +144,5 @@ def test_gcs_repository_file_credentials(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(g, "service_account", type("SA", (), {"Credentials": FakeCred}))
 
     repo = g.GCSFileRepository()
-    url = repo.save(type("F", (), {"read": lambda self: b"x"})(), "b.bin")
+    url = repo.save(io.BytesIO(b"x"), "b.bin")
     assert url.startswith("gs://test-bucket/")

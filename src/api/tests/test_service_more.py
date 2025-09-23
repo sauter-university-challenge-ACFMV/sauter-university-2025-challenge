@@ -7,7 +7,7 @@ from services.ons_service import OnsService, DownloadInfo
 from models.ons_dto import DateFilterDTO
 
 
-def test_download_parquet_save_failure(monkeypatch) -> None:
+def test_download_parquet_save_failure(monkeypatch: Any) -> None:
     class FakeRepo:
         def __init__(self) -> None:
             self.bucket_name = "b"
@@ -45,7 +45,7 @@ def test_download_parquet_save_failure(monkeypatch) -> None:
     assert out == ""
 
 
-def test_process_reservoir_data_partial_success(monkeypatch) -> None:
+def test_process_reservoir_data_partial_success(monkeypatch: Any) -> None:
     os.environ["ONS_API_URL"] = "https://example.com/api"
 
     class FakeRepo:
@@ -97,7 +97,7 @@ def test_process_reservoir_data_partial_success(monkeypatch) -> None:
     assert out[0]["url"].endswith("2022.parquet")
 
 
-def test_process_reservoir_data_defaults_years(monkeypatch) -> None:
+def test_process_reservoir_data_defaults_years(monkeypatch: Any) -> None:
     os.environ["ONS_API_URL"] = "https://example.com/api"
 
     class FakeRepo:

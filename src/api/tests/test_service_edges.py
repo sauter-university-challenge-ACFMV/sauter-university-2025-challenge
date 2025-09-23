@@ -7,7 +7,7 @@ from services.ons_service import OnsService, DownloadInfo
 from models.ons_dto import DateFilterDTO
 
 
-def test_build_gcs_path_future_year(monkeypatch) -> None:
+def test_build_gcs_path_future_year(monkeypatch: Any) -> None:
     class FakeRepo:
         def __init__(self) -> None:
             self.bucket_name = "b"
@@ -25,7 +25,7 @@ def test_build_gcs_path_future_year(monkeypatch) -> None:
     assert p.startswith("pkg/") and p.endswith(".parquet")
 
 
-def test_read_to_dataframe_unsupported(monkeypatch) -> None:
+def test_read_to_dataframe_unsupported(monkeypatch: Any) -> None:
     class FakeRepo:
         def __init__(self) -> None:
             self.bucket_name = "b"
@@ -45,7 +45,7 @@ def test_read_to_dataframe_unsupported(monkeypatch) -> None:
         assert True
 
 
-def test_download_parquet_handles_read_error(monkeypatch) -> None:
+def test_download_parquet_handles_read_error(monkeypatch: Any) -> None:
     class FakeRepo:
         def __init__(self) -> None:
             self.bucket_name = "b"
@@ -85,7 +85,7 @@ def test_download_parquet_handles_read_error(monkeypatch) -> None:
     assert out == ""
 
 
-def test_process_reservoir_data_missing_env(monkeypatch) -> None:
+def test_process_reservoir_data_missing_env(monkeypatch: Any) -> None:
     if "ONS_API_URL" in os.environ:
         del os.environ["ONS_API_URL"]
 

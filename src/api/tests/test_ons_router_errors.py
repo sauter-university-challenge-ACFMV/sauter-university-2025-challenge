@@ -1,3 +1,4 @@
+from typing import Any
 from fastapi.testclient import TestClient
 from main import app
 
@@ -11,7 +12,7 @@ def _payload() -> dict:
     }
 
 
-def test_value_error_translates_to_500(monkeypatch) -> None:
+def test_value_error_translates_to_500(monkeypatch: Any) -> None:
     from services.ons_service import OnsService
 
     async def fake(_self, filters):  # type: ignore[no-untyped-def]
@@ -23,7 +24,7 @@ def test_value_error_translates_to_500(monkeypatch) -> None:
     assert r.status_code == 500
 
 
-def test_request_error_translates_to_503(monkeypatch) -> None:
+def test_request_error_translates_to_503(monkeypatch: Any) -> None:
     from services.ons_service import OnsService
     import httpx
 
@@ -36,7 +37,7 @@ def test_request_error_translates_to_503(monkeypatch) -> None:
     assert r.status_code == 503
 
 
-def test_http_status_error_propagates_status(monkeypatch) -> None:
+def test_http_status_error_propagates_status(monkeypatch: Any) -> None:
     from services.ons_service import OnsService
     import httpx
 
@@ -52,7 +53,7 @@ def test_http_status_error_propagates_status(monkeypatch) -> None:
     assert r.status_code == 418
 
 
-def test_generic_error_becomes_500(monkeypatch) -> None:
+def test_generic_error_becomes_500(monkeypatch: Any) -> None:
     from services.ons_service import OnsService
 
     async def fake(_self, filters):  # type: ignore[no-untyped-def]

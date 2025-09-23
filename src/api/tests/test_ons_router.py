@@ -1,5 +1,5 @@
 import os
-import asyncio
+from typing import Any
 from fastapi.testclient import TestClient
 from main import app
 
@@ -15,12 +15,12 @@ def test_root_and_health_endpoints() -> None:
     assert r.json()["status"] == "healthy"
 
 
-def test_filter_parquet_files_endpoint_success(monkeypatch) -> None:
+def test_filter_parquet_files_endpoint_success(monkeypatch: Any) -> None:
     from services.ons_service import OnsService
 
     os.environ["ONS_API_URL"] = "https://example.com/api"
 
-    async def fake_process(_self, filters):  # type: ignore[no-untyped-def]
+    async def fake_process(_self: Any, filters: Any) -> list[dict]:
         return [{"url": "u", "gcs_path": "p", "bucket": "b"}]
 
     monkeypatch.setattr(OnsService, "process_reservoir_data", fake_process)
