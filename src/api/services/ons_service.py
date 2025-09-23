@@ -3,11 +3,20 @@ import re
 import httpx
 import pandas as pd
 import asyncio
+
+from pydantic import BaseModel
 from repositories.gcs_repository import GCSFileRepository
 import io
 from pathlib import Path
+from datetime import datetime
 from models.ons_dto import DateFilterDTO
 from utils.logger import LogLevels, log
+
+
+class DownloadInfo(BaseModel):
+    url: str
+    year: int
+    package: str
 
 
 class OnsService():
@@ -17,45 +26,51 @@ class OnsService():
     async def _download_parquet(
         self,
         client: httpx.AsyncClient, 
-        url: str, 
+        download_info: DownloadInfo,
     ) -> str:
-        """Helper to download one parquet file, save to bucket, and return filename."""
+        """Helper to download one parquet file, save to bucket with structured path, and return the path."""
+        url = download_info.url
+        resource_year = download_info.year
+        package_name = download_info.package
+
         log(f"Processing URL: {url}", level=LogLevels.DEBUG)
         
         try:
-            # Download the file
             response = await client.get(url, timeout=30.0)
             response.raise_for_status()
             log(f"Download successful ({len(response.content)} bytes)", level=LogLevels.DEBUG)
             
-            filename = Path(url).name
+            original_filename = Path(url).name
             
-            # Create a BytesIO buffer from response content
+            now = datetime.now()
+            if resource_year < now.year:
+                gcs_path = f"{package_name}/{resource_year}/{original_filename}"
+            else: 
+                gcs_path = f"{package_name}/{now.year}/{now.month:02d}/{now.day:02d}/{original_filename}"
+            log(f"Determined GCS path: {gcs_path}", level=LogLevels.DEBUG)
+
             file_buffer = io.BytesIO(response.content)
             
-            # Verify it's a valid parquet file by reading it
             try:
-                # Reset buffer position to beginning for reading
                 file_buffer.seek(0)
                 df = pd.read_parquet(file_buffer, engine="fastparquet")
                 log(f"Verified parquet file with {len(df)} rows and {len(df.columns)} columns", level=LogLevels.DEBUG)
             except Exception as e:
-                log(f"Failed to read parquet file {filename}: {e}", level=LogLevels.ERROR)
+                log(f"Failed to read parquet file {original_filename}: {e}", level=LogLevels.ERROR)
                 return ""
             
             # Reset buffer position to beginning for saving
             file_buffer.seek(0)
             
-            # Save to GCS bucket
+            # Save to GCS bucket using the new structured path
             try:
-                public_url = self.repository.save(file_buffer, filename)
-                log(f"Successfully saved {filename} to bucket: {self.repository.bucket_name}", level=LogLevels.INFO)
-                log(f"File URL: {public_url}", level=LogLevels.DEBUG)
+                self.repository.save(file_buffer, gcs_path)
+                log(f"Successfully saved {original_filename} to bucket path: {gcs_path}", level=LogLevels.INFO)
             except Exception as e:
-                log(f"Failed to save {filename} to bucket: {e}", level=LogLevels.ERROR)
+                log(f"Failed to save {original_filename} to bucket path {gcs_path}: {e}", level=LogLevels.ERROR)
                 return ""
             
-            return filename
+            return gcs_path
 
         except httpx.RequestError as e:
             log(f"Request error for URL {url}: {e}", level=LogLevels.ERROR)
@@ -77,7 +92,6 @@ class OnsService():
         """
         log(f"Service started with filters: start={filters.start_date}, end={filters.end_date}", level=LogLevels.INFO)
         
-        # Set default package if none provided
         package = filters.package if filters.package else "ear-diario-por-reservatorio"
         ons_base_api_url = os.environ.get("ONS_API_URL")
         
@@ -94,7 +108,6 @@ class OnsService():
         
         try:
             async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
-                # Fetch package information
                 log("Fetching package information from ONS API", level=LogLevels.DEBUG)
                 response = await client.get(ons_api_url)
                 response.raise_for_status()
@@ -107,53 +120,54 @@ class OnsService():
                     log("No resources found in the package", level=LogLevels.ERROR)
                     return []
                 
-                # Filter parquet files by year range
-                parquet_urls_to_download = []
+                parquet_resources_to_download = []
                 start_year = filters.start_date.year
                 end_year = filters.end_date.year
                 
                 log(f"Filtering resources for years {start_year}-{end_year}", level=LogLevels.DEBUG)
                 
                 for resource in all_resources:
-                    if resource.get("format", "").upper() == "PARQUET" and resource.get("url"):
+                    if resource.get("format", "").lower() == "parquet" and resource.get("url"):
                         name = resource.get("name", "")
-                        # Extract year from resource name
                         match = re.search(r"(\d{4})", name)
                         if match:
                             resource_year = int(match.group(1))
                             if start_year <= resource_year <= end_year:
-                                parquet_urls_to_download.append(resource["url"])
+                                down_load_info = DownloadInfo(
+                                    url=resource["url"],
+                                    year=resource_year,
+                                    package=package
+                                )
+                                parquet_resources_to_download.append(down_load_info)
                                 log(f"Added resource for year {resource_year}: {name}", level=LogLevels.DEBUG)
                 
-                log(f"Found {len(parquet_urls_to_download)} parquet files for years {start_year}-{end_year}", level=LogLevels.INFO)
+                log(f"Found {len(parquet_resources_to_download)} parquet files for years {start_year}-{end_year}", level=LogLevels.INFO)
                 
-                if not parquet_urls_to_download:
+                if not parquet_resources_to_download:
                     log("No parquet files found for the specified date range", level=LogLevels.ERROR)
                     return []
                 
-                # Download files concurrently
                 log("Starting concurrent downloads", level=LogLevels.INFO)
                 tasks = [
-                    self._download_parquet(client, url)
-                    for url in parquet_urls_to_download
+                    self._download_parquet(client, resource)
+                    for resource in parquet_resources_to_download
                 ]
                 
-                filenames = await asyncio.gather(*tasks, return_exceptions=True)
+                gcs_paths = await asyncio.gather(*tasks, return_exceptions=True)
                 
-                # Process results and handle exceptions
                 successful_downloads = []
-                for url, result in zip(parquet_urls_to_download, filenames):
+                for resource, result in zip(parquet_resources_to_download, gcs_paths):
                     if isinstance(result, Exception):
-                        log(f"Task failed for {url}: {result}", level=LogLevels.ERROR)
-                    elif result:  # Non-empty filename means success
+                        log(f"Task failed for {resource.url}: {result}", level=LogLevels.ERROR)
+                    elif result:
                         successful_downloads.append({
-                            "url": url,
-                            "filename": result,
+                            "url": resource.url,
+                            "gcs_path": result,
                             "bucket": self.repository.bucket_name
                         })
                 
                 success_count = len(successful_downloads)
-                total_count = len(parquet_urls_to_download)
+                total_count = len(parquet_resources_to_download)
                 
                 log(f"Download summary: {success_count}/{total_count} files successfully processed", level=LogLevels.INFO)
                 
