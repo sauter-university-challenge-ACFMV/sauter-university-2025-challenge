@@ -64,3 +64,4 @@ override.tf.json
 EOF
 
 *.env
+*.json

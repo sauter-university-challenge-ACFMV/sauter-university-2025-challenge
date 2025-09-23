@@ -3,10 +3,18 @@ import re
 import httpx
 import pandas as pd
 import asyncio
+from repositories.gcs_repository import GCSFileRepository
 import io
 from datetime import date, datetime
 from models.ons_dto import DateFilterDTO
 from utils.logger import LogLevels, log
+
+
+repo = GCSFileRepository()
+
+def save_file(file, filename: str, content_type: str) -> str:
+    return repo.upload(file, filename, content_type)
+
 
 async def _download_and_process_parquet(
     client: httpx.AsyncClient, 
@@ -106,3 +114,6 @@ async def process_reservoir_data(filters: DateFilterDTO) -> list[dict]:
         log(f"Final merged dataframe has {len(merged_df)} rows. Converting to dict.", level=LogLevels.DEBUG)
 
     return merged_df.to_dict('records')
+
+
+

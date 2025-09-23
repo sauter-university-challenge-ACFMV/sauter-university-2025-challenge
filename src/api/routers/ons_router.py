@@ -2,11 +2,21 @@ from fastapi import APIRouter, HTTPException, Body
 from models.ons_dto import DateFilterDTO
 from services.ons_service import process_reservoir_data
 import httpx
+from fastapi import APIRouter, UploadFile, File, HTTPException
+from services.ons_service import save_file
 
 router = APIRouter(
     prefix="/ons",
     tags=["ONS Data"]
 )
+
+@router.post("/upload")
+async def upload(file: UploadFile = File(...)):
+    try:
+        url = save_file(file.file, file.filename, file.content_type)
+        return {"filename": file.filename, "url": url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post(
     "/filter-parquet-files",
