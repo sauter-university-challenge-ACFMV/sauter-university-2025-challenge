@@ -6,49 +6,79 @@ from google.oauth2 import service_account  # type: ignore[import-untyped]
 from repositories.base_repository import FileRepository
 from utils.logger import LogLevel, log
 from dotenv import load_dotenv
+
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
+
 
 class GCSFileRepository(FileRepository):
     def __init__(self) -> None:
         self.client = self._create_storage_client()
         self.bucket_name = os.environ.get("GCS_BUCKET_NAME", "default-bucket")
         self.bucket = self.client.bucket(self.bucket_name)
-    
+
     def _create_storage_client(self) -> storage.Client:  # type: ignore[name-defined]
         """Create Google Cloud Storage client with proper authentication"""
-        
+
         log("Checking environment variables for GCS authentication", LogLevel.DEBUG)
-        log(f"GOOGLE_CREDENTIALS_JSON exists: {'GOOGLE_CREDENTIALS_JSON' in os.environ}", LogLevel.DEBUG)
-        log(f"GOOGLE_APPLICATION_CREDENTIALS exists: {'GOOGLE_APPLICATION_CREDENTIALS' in os.environ}", LogLevel.DEBUG)
-        log(f"GOOGLE_CLOUD_PROJECT exists: {'GOOGLE_CLOUD_PROJECT' in os.environ}", LogLevel.DEBUG)
-        
+        log(
+            f"GOOGLE_CREDENTIALS_JSON exists: {'GOOGLE_CREDENTIALS_JSON' in os.environ}",
+            LogLevel.DEBUG,
+        )
+        log(
+            f"GOOGLE_APPLICATION_CREDENTIALS exists: {'GOOGLE_APPLICATION_CREDENTIALS' in os.environ}",
+            LogLevel.DEBUG,
+        )
+        log(
+            f"GOOGLE_CLOUD_PROJECT exists: {'GOOGLE_CLOUD_PROJECT' in os.environ}",
+            LogLevel.DEBUG,
+        )
+
         credentials_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
         if credentials_json:
-            log("Found GOOGLE_CREDENTIALS_JSON, attempting to parse JSON credentials", LogLevel.DEBUG)
+            log(
+                "Found GOOGLE_CREDENTIALS_JSON, attempting to parse JSON credentials",
+                LogLevel.DEBUG,
+            )
             try:
                 credentials_json = credentials_json.strip()
                 credentials_info = json.loads(credentials_json)
-                credentials = service_account.Credentials.from_service_account_info(credentials_info)
-                log("Successfully created GCS client with JSON credentials", LogLevel.INFO)
+                credentials = service_account.Credentials.from_service_account_info(
+                    credentials_info
+                )
+                log(
+                    "Successfully created GCS client with JSON credentials",
+                    LogLevel.INFO,
+                )
                 return storage.Client(credentials=credentials)
             except json.JSONDecodeError as e:
                 log(f"GOOGLE_CREDENTIALS_JSON is not valid JSON: {e}", LogLevel.ERROR)
             except Exception as e:
                 log(f"Could not create credentials from JSON: {e}", LogLevel.ERROR)
-        
+
         credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
         if credentials_path:
-            log(f"Found GOOGLE_APPLICATION_CREDENTIALS: {credentials_path}", LogLevel.DEBUG)
+            log(
+                f"Found GOOGLE_APPLICATION_CREDENTIALS: {credentials_path}",
+                LogLevel.DEBUG,
+            )
             if os.path.exists(credentials_path):
                 try:
-                    credentials = service_account.Credentials.from_service_account_file(credentials_path)
-                    log("Successfully created GCS client with service account file", LogLevel.INFO)
+                    credentials = service_account.Credentials.from_service_account_file(
+                        credentials_path
+                    )
+                    log(
+                        "Successfully created GCS client with service account file",
+                        LogLevel.INFO,
+                    )
                     return storage.Client(credentials=credentials)
                 except Exception as e:
                     log(f"Could not create credentials from file: {e}", LogLevel.ERROR)
             else:
-                log(f"Credentials file does not exist: {credentials_path}", LogLevel.ERROR)
-        
+                log(
+                    f"Credentials file does not exist: {credentials_path}",
+                    LogLevel.ERROR,
+                )
+
         project_id = os.environ.get("GOOGLE_CLOUD_PROJECT")
         if project_id:
             log(f"Found GOOGLE_CLOUD_PROJECT: {project_id}", LogLevel.DEBUG)
@@ -58,14 +88,20 @@ class GCSFileRepository(FileRepository):
                 return client
             except Exception as e:
                 log(f"Could not create client with project ID: {e}", LogLevel.ERROR)
-        
+
         log("Trying default credentials as last resort", LogLevel.DEBUG)
         try:
             client = storage.Client()
-            log("Successfully created GCS client with default credentials", LogLevel.INFO)
+            log(
+                "Successfully created GCS client with default credentials",
+                LogLevel.INFO,
+            )
             return client
         except Exception as e:
-            log(f"All authentication methods failed. Original error: {e}", LogLevel.ERROR)
+            log(
+                f"All authentication methods failed. Original error: {e}",
+                LogLevel.ERROR,
+            )
             raise Exception(
                 f"Could not authenticate with Google Cloud Storage. "
                 f"Please ensure one of the following environment variables is set:\n"

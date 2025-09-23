@@ -21,7 +21,7 @@ class DownloadInfo(BaseModel):
     data_type: str
 
 
-class OnsService():
+class OnsService:
     def __init__(self) -> None:
         self.repository = GCSFileRepository()
 
@@ -35,11 +35,11 @@ class OnsService():
     def _read_to_dataframe(self, content: bytes, data_type: str) -> pd.DataFrame:
         with io.BytesIO(content) as buffer:
             log(f"Reading content as {data_type}", level=LogLevel.DEBUG)
-            if data_type == 'parquet':
+            if data_type == "parquet":
                 return pd.read_parquet(buffer, engine="pyarrow")
-            if data_type == 'csv':
-                return pd.read_csv(buffer, sep=';', encoding='latin1', low_memory=False)
-            if data_type == 'xlsx':
+            if data_type == "csv":
+                return pd.read_csv(buffer, sep=";", encoding="latin1", low_memory=False)
+            if data_type == "xlsx":
                 return pd.read_excel(buffer)
             raise ValueError(f"Unsupported data_type: {data_type}")
 
@@ -50,12 +50,14 @@ class OnsService():
     def _dataframe_to_parquet_buffer(self, df: pd.DataFrame) -> io.BytesIO:
         log("Serializing DataFrame to Parquet buffer", level=LogLevel.DEBUG)
         out = io.BytesIO()
-        df.to_parquet(out, engine='pyarrow', index=False)
+        df.to_parquet(out, engine="pyarrow", index=False)
         out.seek(0)
         return out
 
-    def _build_gcs_path(self, original_filename: str, resource_year: int, package_name: str) -> str:
-        parquet_filename = Path(original_filename).with_suffix('.parquet').name
+    def _build_gcs_path(
+        self, original_filename: str, resource_year: int, package_name: str
+    ) -> str:
+        parquet_filename = Path(original_filename).with_suffix(".parquet").name
         now = datetime.now()
         if resource_year < now.year:
             return f"{package_name}/{resource_year}/{parquet_filename}"
@@ -86,30 +88,44 @@ class OnsService():
             try:
                 df = self._read_to_dataframe(content, data_type)
             except Exception as e:
-                log(f"Failed to read source file {original_filename}: {e}", level=LogLevel.ERROR)
+                log(
+                    f"Failed to read source file {original_filename}: {e}",
+                    level=LogLevel.ERROR,
+                )
                 return ""
 
             df = self._convert_all_columns_to_string(df)
             buffer = self._dataframe_to_parquet_buffer(df)
-            gcs_path = self._build_gcs_path(original_filename, resource_year, package_name)
+            gcs_path = self._build_gcs_path(
+                original_filename, resource_year, package_name
+            )
             try:
                 gcs_url = self._save_to_gcs(buffer, gcs_path)
-                log(f"Successfully saved to bucket path: {gcs_path}, URL: {gcs_url}", level=LogLevel.INFO)
+                log(
+                    f"Successfully saved to bucket path: {gcs_path}, URL: {gcs_url}",
+                    level=LogLevel.INFO,
+                )
             except Exception as e:
-                log(f"Failed to save to bucket path {gcs_path}: {e}\n{traceback.format_exc()}", level=LogLevel.ERROR)
+                log(
+                    f"Failed to save to bucket path {gcs_path}: {e}\n{traceback.format_exc()}",
+                    level=LogLevel.ERROR,
+                )
                 return ""
 
             return gcs_path
 
         except Exception as e:
-            log(f"Unexpected error processing URL {url}: {e}\n{traceback.format_exc()}", level=LogLevel.ERROR)
+            log(
+                f"Unexpected error processing URL {url}: {e}\n{traceback.format_exc()}",
+                level=LogLevel.ERROR,
+            )
             return ""
 
-
-    async def process_reservoir_data(
-            self,
-            filters: DateFilterDTO) -> list[dict]:
-        log(f"Service started with filters: start_year={filters.start_year}, end_year={filters.end_year}", level=LogLevel.INFO)
+    async def process_reservoir_data(self, filters: DateFilterDTO) -> list[dict]:
+        log(
+            f"Service started with filters: start_year={filters.start_year}, end_year={filters.end_year}",
+            level=LogLevel.INFO,
+        )
 
         package = filters.package if filters.package else "ear-diario-por-reservatorio"
         ons_base_api_url = os.environ.get("ONS_API_URL")
@@ -142,9 +158,14 @@ class OnsService():
                 parquet_resources_to_download = []
                 start_year = filters.start_year
                 end_year = filters.end_year
-                data_type = filters.data_type.lower() if filters.data_type else "parquet"
+                data_type = (
+                    filters.data_type.lower() if filters.data_type else "parquet"
+                )
 
-                log(f"Filtering resources for years {start_year}-{end_year} and type {data_type}", level=LogLevel.DEBUG)
+                log(
+                    f"Filtering resources for years {start_year}-{end_year} and type {data_type}",
+                    level=LogLevel.DEBUG,
+                )
 
                 # Guard against None values for years
                 if start_year is None or end_year is None:
@@ -155,7 +176,9 @@ class OnsService():
                         end_year = now_year
 
                 for resource in all_resources:
-                    if resource.get("format", "").lower() == data_type and resource.get("url"):
+                    if resource.get("format", "").lower() == data_type and resource.get(
+                        "url"
+                    ):
                         name = resource.get("name", "")
                         match = re.search(r"(\d{4})", name)
                         if match:
@@ -165,15 +188,24 @@ class OnsService():
                                     url=resource["url"],
                                     year=resource_year,
                                     package=package,
-                                    data_type=data_type
+                                    data_type=data_type,
                                 )
                                 parquet_resources_to_download.append(download_info)
-                                log(f"Added resource for year {resource_year}: {name}", level=LogLevel.DEBUG)
+                                log(
+                                    f"Added resource for year {resource_year}: {name}",
+                                    level=LogLevel.DEBUG,
+                                )
 
-                log(f"Found {len(parquet_resources_to_download)} files for years {start_year}-{end_year}", level=LogLevel.INFO)
+                log(
+                    f"Found {len(parquet_resources_to_download)} files for years {start_year}-{end_year}",
+                    level=LogLevel.INFO,
+                )
 
                 if not parquet_resources_to_download:
-                    log(f"No files of type '{data_type}' found for the specified date range", level=LogLevel.ERROR)
+                    log(
+                        f"No files of type '{data_type}' found for the specified date range",
+                        level=LogLevel.ERROR,
+                    )
                     return []
 
                 log("Starting concurrent downloads", level=LogLevel.INFO)
@@ -187,25 +219,42 @@ class OnsService():
                 successful_downloads = []
                 for resource, result in zip(parquet_resources_to_download, gcs_paths):
                     if isinstance(result, Exception):
-                        log(f"Task failed for {resource.url}: {result}", level=LogLevel.ERROR)
+                        log(
+                            f"Task failed for {resource.url}: {result}",
+                            level=LogLevel.ERROR,
+                        )
                     elif result:
-                        successful_downloads.append({
-                            "url": resource.url,
-                            "gcs_path": result,
-                            "bucket": self.repository.bucket_name
-                        })
+                        successful_downloads.append(
+                            {
+                                "url": resource.url,
+                                "gcs_path": result,
+                                "bucket": self.repository.bucket_name,
+                            }
+                        )
 
                 success_count = len(successful_downloads)
                 total_count = len(parquet_resources_to_download)
 
-                log(f"Download summary: {success_count}/{total_count} files successfully processed", level=LogLevel.INFO)
+                log(
+                    f"Download summary: {success_count}/{total_count} files successfully processed",
+                    level=LogLevel.INFO,
+                )
 
                 if success_count == 0:
-                    log("No files were successfully downloaded and saved", level=LogLevel.ERROR)
+                    log(
+                        "No files were successfully downloaded and saved",
+                        level=LogLevel.ERROR,
+                    )
                 elif success_count < total_count:
-                    log(f"Partial success: {total_count - success_count} files failed", level=LogLevel.ERROR)
+                    log(
+                        f"Partial success: {total_count - success_count} files failed",
+                        level=LogLevel.ERROR,
+                    )
                 else:
-                    log("All files successfully downloaded and saved to bucket", level=LogLevel.INFO)
+                    log(
+                        "All files successfully downloaded and saved to bucket",
+                        level=LogLevel.INFO,
+                    )
 
                 return successful_downloads
 
@@ -214,7 +263,9 @@ class OnsService():
             log(error_msg, level=LogLevel.ERROR)
             raise Exception(error_msg)
         except httpx.HTTPStatusError as e:
-            error_msg = f"HTTP error {e.response.status_code} while fetching ONS API: {e}"
+            error_msg = (
+                f"HTTP error {e.response.status_code} while fetching ONS API: {e}"
+            )
             log(error_msg, level=LogLevel.ERROR)
             raise Exception(error_msg)
         except Exception as e:

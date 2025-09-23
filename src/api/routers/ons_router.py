@@ -3,10 +3,7 @@ from models.ons_dto import DateFilterDTO
 import httpx
 from services.ons_service import OnsService
 
-router = APIRouter(
-    prefix="/ons",
-    tags=["ONS Data"]
-)
+router = APIRouter(prefix="/ons", tags=["ONS Data"])
 
 service = OnsService()
 
@@ -18,11 +15,12 @@ service = OnsService()
 #     except Exception as e:
 #         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post(
     "/filter-parquet-files",
     response_model=list[dict],
     summary="Filter ONS PARQUET Files",
-    description="Fetches and filters a list of PARQUET file resources from the ONS API based on dates provided in the request body."
+    description="Fetches and filters a list of PARQUET file resources from the ONS API based on dates provided in the request body.",
 )
 async def filter_ons_parquet_files_endpoint(
     filters: DateFilterDTO = Body(...)
@@ -39,6 +37,11 @@ async def filter_ons_parquet_files_endpoint(
     except httpx.RequestError as exc:
         raise HTTPException(status_code=503, detail=f"Error requesting ONS API: {exc}")
     except httpx.HTTPStatusError as exc:
-        raise HTTPException(status_code=exc.response.status_code, detail=f"ONS API returned an error: {exc}")
+        raise HTTPException(
+            status_code=exc.response.status_code,
+            detail=f"ONS API returned an error: {exc}",
+        )
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(exc)}")
+        raise HTTPException(
+            status_code=500, detail=f"An unexpected error occurred: {str(exc)}"
+        )

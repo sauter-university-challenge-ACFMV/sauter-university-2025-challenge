@@ -12,14 +12,16 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 app = FastAPI(
     title="ONS Data Fetcher API",
     description="An API to fetch and filter PARQUET file resources from the ONS open data portal.",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 app.include_router(ons_router.router)
 
+
 class DataFilter(BaseModel):
     start_date: date | None
     end_date: date | None
+
 
 @app.get("/")
 async def root() -> dict:
