@@ -65,3 +65,4 @@ EOF
 
 *.env
 *.json
+/src/api/credentials/

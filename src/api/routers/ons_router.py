@@ -1,22 +1,23 @@
 from fastapi import APIRouter, HTTPException, Body
 from models.ons_dto import DateFilterDTO
-from services.ons_service import process_reservoir_data
 import httpx
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from services.ons_service import save_file
+from fastapi import APIRouter, HTTPException
+from services.ons_service import OnsService
 
 router = APIRouter(
     prefix="/ons",
     tags=["ONS Data"]
 )
 
-@router.post("/upload")
-async def upload(file: UploadFile = File(...)):
-    try:
-        url = save_file(file.file, file.filename, file.content_type)
-        return {"filename": file.filename, "url": url}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+service = OnsService()
+
+# @router.post("/upload")
+# async def upload(file: UploadFile = File(...)):
+#     try:
+#         url = service.save_file(file.file, file.filename, file.content_type)
+#         return {"filename": file.filename, "url": url}
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post(
     "/filter-parquet-files",
@@ -32,7 +33,7 @@ async def filter_ons_parquet_files_endpoint(
     This function handles the HTTP request/response and calls the service layer.
     """
     try:
-        filtered_files = await process_reservoir_data(filters)
+        filtered_files = await service.process_reservoir_data(filters)
         return filtered_files
     except ValueError as exc:
         raise HTTPException(status_code=500, detail=str(exc))
