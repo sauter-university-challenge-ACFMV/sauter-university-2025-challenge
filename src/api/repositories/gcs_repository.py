@@ -7,7 +7,6 @@ from utils.logger import LogLevels, log
 
 class GCSFileRepository(FileRepository):
     def __init__(self):
-        # Initialize client with proper authentication
         self.client = self._create_storage_client()
         self.bucket_name = os.environ.get("GCS_BUCKET_NAME", "default-bucket")
         self.bucket = self.client.bucket(self.bucket_name)
@@ -15,18 +14,15 @@ class GCSFileRepository(FileRepository):
     def _create_storage_client(self):
         """Create Google Cloud Storage client with proper authentication"""
         
-        # Debug: Check available environment variables
         log("Checking environment variables for GCS authentication", LogLevels.DEBUG)
         log(f"GOOGLE_CREDENTIALS_JSON exists: {'GOOGLE_CREDENTIALS_JSON' in os.environ}", LogLevels.DEBUG)
         log(f"GOOGLE_APPLICATION_CREDENTIALS exists: {'GOOGLE_APPLICATION_CREDENTIALS' in os.environ}", LogLevels.DEBUG)
         log(f"GOOGLE_CLOUD_PROJECT exists: {'GOOGLE_CLOUD_PROJECT' in os.environ}", LogLevels.DEBUG)
         
-        # Method 1: Try JSON credentials from environment variable
         credentials_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
         if credentials_json:
             log("Found GOOGLE_CREDENTIALS_JSON, attempting to parse JSON credentials", LogLevels.DEBUG)
             try:
-                # Remove any extra whitespace and newlines
                 credentials_json = credentials_json.strip()
                 credentials_info = json.loads(credentials_json)
                 credentials = service_account.Credentials.from_service_account_info(credentials_info)
@@ -37,7 +33,6 @@ class GCSFileRepository(FileRepository):
             except Exception as e:
                 log(f"Could not create credentials from JSON: {e}", LogLevels.ERROR)
         
-        # Method 2: Try service account key file path
         credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
         if credentials_path:
             log(f"Found GOOGLE_APPLICATION_CREDENTIALS: {credentials_path}", LogLevels.DEBUG)
@@ -51,7 +46,6 @@ class GCSFileRepository(FileRepository):
             else:
                 log(f"Credentials file does not exist: {credentials_path}", LogLevels.ERROR)
         
-        # Method 3: Try using project ID with default credentials
         project_id = os.environ.get("GOOGLE_CLOUD_PROJECT")
         if project_id:
             log(f"Found GOOGLE_CLOUD_PROJECT: {project_id}", LogLevels.DEBUG)
@@ -62,7 +56,6 @@ class GCSFileRepository(FileRepository):
             except Exception as e:
                 log(f"Could not create client with project ID: {e}", LogLevels.ERROR)
         
-        # Method 4: Last resort - try default credentials (works in GCP environments)
         log("Trying default credentials as last resort", LogLevels.DEBUG)
         try:
             client = storage.Client()
@@ -81,7 +74,8 @@ class GCSFileRepository(FileRepository):
 
     def upload(self, file, filename: str, content_type: str) -> str:
         blob = self.bucket.blob(filename)
-        blob.upload_from_file(file, content_type=content_type)
+        blob.upload_from_string(file.read(), content_type=content_type)
+        # blob.upload_from_file(file, content_type=content_type)
         # blob.make_public()
         return blob.public_url
 
