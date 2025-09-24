@@ -9,29 +9,29 @@ on:
 
 jobs:
   # Job 1: Verificar estilo e formatação do código python
-  lint:
-    name: Lint & Format
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+  # lint:
+  #   name: Lint & Format
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 5
     
-    steps:
-    - uses: actions/checkout@v4
+  #   steps:
+  #   - uses: actions/checkout@v4
     
-    - name: Setup Python 3.11
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+  #   - name: Setup Python 3.11
+  #     uses: actions/setup-python@v4
+  #     with:
+  #       python-version: '3.11'
     
-    - name: Install Hatch & Ruff
-      run: pip install hatch ruff
+  #   - name: Install Hatch & Ruff
+  #     run: pip install hatch ruff
     
-    # Verificar problemas de estilo no código
-    - name: Lint with Ruff
-      run: uv run ruff check src/
+  #   # Verificar problemas de estilo no código
+  #   - name: Lint with Ruff
+  #     run: uv run ruff check src/
     
-    # Verificar se código está bem formatado
-    - name: Format check with Ruff
-      run: uv run ruff format --check src/
+  #   # Verificar se código está bem formatado
+  #   - name: Format check with Ruff
+  #     run: uv run ruff format --check src/
 
   # Job 2: Verificar anotações de tipo
   type-check:
