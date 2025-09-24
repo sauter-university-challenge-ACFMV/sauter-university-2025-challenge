@@ -183,6 +183,8 @@ class OnsService:
 
                 # Build a per-year best-format selection
                 by_year: dict[int, dict] = {}
+                no_year_resources: list[dict] = []
+                
                 for resource in all_resources:
                     fmt = resource.get("format", "").lower()
                     url = resource.get("url")
@@ -190,15 +192,17 @@ class OnsService:
                         continue
                     name = resource.get("name", "")
                     match = re.search(r"(\d{4})", name)
-                    if not match:
-                        continue
-                    resource_year = int(match.group(1))
-                    if resource_year < start_year or resource_year > end_year:
-                        continue
-                    rank = preferred_formats.index(fmt)
-                    current = by_year.get(resource_year)
-                    if current is None or rank < current["rank"]:
-                        by_year[resource_year] = {"resource": resource, "rank": rank}
+                    
+                    if match:
+                        resource_year = int(match.group(1))
+                        if resource_year < start_year or resource_year > end_year:
+                            continue
+                        rank = preferred_formats.index(fmt)
+                        current = by_year.get(resource_year)
+                        if current is None or rank < current["rank"]:
+                            by_year[resource_year] = {"resource": resource, "rank": rank}
+                    else:
+                        no_year_resources.append(resource)
 
                 for resource_year, item in sorted(by_year.items()):
                     chosen = item["resource"]
@@ -214,6 +218,35 @@ class OnsService:
                         f"Added resource for year {resource_year}: {chosen.get('name','')}",
                         level=LogLevel.DEBUG,
                     )
+
+                if not parquet_resources_to_download and no_year_resources:
+                    log("No year-specific resources found, using fallback resources", level=LogLevel.DEBUG)
+                    
+                    # Find best format among no-year resources
+                    best_resource = None
+                    best_rank = len(preferred_formats)
+                    
+                    for resource in no_year_resources:
+                        fmt = resource.get("format", "").lower()
+                        if fmt in preferred_formats:
+                            rank = preferred_formats.index(fmt)
+                            if rank < best_rank:
+                                best_resource = resource
+                                best_rank = rank
+                    
+                    if best_resource:
+                        fmt = best_resource.get("format", "").lower()
+                        download_info = DownloadInfo(
+                            url=best_resource["url"],
+                            year=datetime.now().year,
+                            package=package,
+                            data_type=fmt,
+                        )
+                        parquet_resources_to_download.append(download_info)
+                        log(
+                            f"Added fallback resource: {best_resource.get('name','')}",
+                            level=LogLevel.DEBUG,
+                        )
 
                 log(
                     f"Found {len(parquet_resources_to_download)} files for years {start_year}-{end_year}",
