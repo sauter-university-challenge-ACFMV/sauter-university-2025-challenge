@@ -71,15 +71,21 @@ module "cloud_run" {
   env                     = var.env
 
   secret_environment_variables = {
-    "ONS_API_URL"     = google_secret_manager_secret_version.ons_api_url_version.id
-    "GCS_BUCKET_NAME" = google_secret_manager_secret_version.gcs_bucket_name_version.id
+    "ONS_API_URL" = {
+      secret_name    = google_secret_manager_secret.ons_api_url.secret_id
+      secret_version = "latest"
+    },
+    "GCS_BUCKET_NAME" = {
+      secret_name    = google_secret_manager_secret.gcs_bucket_name.secret_id
+      secret_version = "latest"
+    }
   }
 
   depends_on = [
     google_secret_manager_secret_iam_member.ons_api_url_accessor,
     google_secret_manager_secret_iam_member.gcs_bucket_name_accessor
   ]
-}
+} 
 
 module "cloud_storage" {
   source     = "../../modules/cloud_storage"

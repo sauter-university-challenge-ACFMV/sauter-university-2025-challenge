@@ -9,7 +9,10 @@ variable "allow_unauthenticated" {
   default = true
 }
 variable "secret_environment_variables" {
-  description = "Um mapa de variáveis de ambiente para serem montadas a partir do Secret Manager."
-  type        = map(string)
-  default     = {}
+  description = "Um mapa de objetos para variáveis de ambiente montadas a partir do Secret Manager."
+  type = map(object({
+    secret_name    = string
+    secret_version = string
+  }))
+  default = {}
 }
