@@ -47,7 +47,13 @@ jobs:
 
       - name: Terraform Plan
         run: terraform plan -out=plan.tfplan
+        env:
+          TF_VAR_ons_api_url: ${{ secrets.ONS_API_URL }}
+          TF_VAR_gcs_bucket_name: ${{ secrets.GCS_BUCKET_NAME }}
 
       - name: Terraform Apply (main only)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve plan.tfplan
+        env:
+          TF_VAR_ons_api_url: ${{ secrets.ONS_API_URL }}
+          TF_VAR_gcs_bucket_name: ${{ secrets.GCS_BUCKET_NAME }}

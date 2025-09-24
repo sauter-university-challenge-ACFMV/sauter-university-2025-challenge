@@ -8,3 +8,8 @@ variable "allow_unauthenticated" {
   type    = bool
   default = true
 }
+variable "secret_environment_variables" {
+  description = "Um mapa de variáveis de ambiente para serem montadas a partir do Secret Manager."
+  type        = map(string)
+  default     = {}
+}
