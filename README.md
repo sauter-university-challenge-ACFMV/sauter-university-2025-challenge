@@ -224,9 +224,6 @@ ONS_API_URL=https://dados.ons.org.br/api/3/action/package_show
 # Nome do bucket de destino no GCS
 GCS_BUCKET_NAME="seu-nome-de-bucket-aqui"
 
-GOOGLE_APPLICATION_CREDENTIALS="aaaa"
-GOOGLE_CLOUD_PROJECT="bbb"
-
 # ==================================
 # Configurações de autenticação do Google Cloud
 # ==================================
