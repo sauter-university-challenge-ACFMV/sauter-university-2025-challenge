@@ -23,3 +23,13 @@ variable "dev_budget_amount" {
 variable "alert_group_email" {
   type = string
 }
+
+variable "gcs_bucket_name" {
+  type = string
+}
+
+variable "google_credentials_json" {
+  type      = string
+  sensitive = true
+}
+

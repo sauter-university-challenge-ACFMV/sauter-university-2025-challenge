@@ -85,3 +85,44 @@ module "budget" {
   monitoring_channel_ids = [module.monitoring.channel_id]
 }
 
+resource "google_cloud_run_service" "baseline_api" {
+  name     = "baseline-api"
+  location = var.region
+  project  = var.project_id
+
+  template {
+    spec {
+      containers {
+        image = "southamerica-east1-docker.pkg.dev/${var.project_id}/${var.repo_id}/baseline-api:latest"
+        ports {
+          container_port = 8080
+        }
+
+        # Variáveis de ambiente (equivalente ao .env)
+        env {
+          name  = "ONS_API_URL"
+          value = "https://dados.ons.org.br/api/3/action/package_show"
+        }
+
+        env {
+          name  = "GCS_BUCKET_NAME"
+          value = var.gcs_bucket_name
+        }
+
+        env {
+          name  = "GOOGLE_CLOUD_PROJECT"
+          value = var.project_id
+        }
+
+        # Em vez de GOOGLE_APPLICATION_CREDENTIALS apontar para arquivo,
+        # você usa a variável GOOGLE_CREDENTIALS_JSON (conteúdo da chave).
+        env {
+          name  = "GOOGLE_CREDENTIALS_JSON"
+          value = var.google_credentials_json
+        }
+      }
+    }
+  }
+}
+
+
