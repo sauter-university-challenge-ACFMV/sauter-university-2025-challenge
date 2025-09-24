@@ -84,7 +84,7 @@ jobs:
     name: Docker Build
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [lint, type-check, test]
+    needs: [type-check, test]
     
     steps:
     - uses: actions/checkout@v4
