@@ -36,4 +36,16 @@ resource "google_cloud_run_v2_service_iam_binding" "invoker_all" {
   location = var.region
   role     = "roles/run.invoker"
   members  = ["allUsers"]
+  dynamic "env" {
+    for_each = var.secret_environment_variables
+    content {
+      name = env.key
+      value_source {
+        secret_key_ref {
+          secret  = env.value.secret_name
+          version = env.value.secret_version
+        }
+      }
+    }
+  }
 }
