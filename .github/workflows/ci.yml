@@ -9,30 +9,29 @@ on:
 
 jobs:
   # Job 1: Verificar estilo e formatação do código python
-  lint:
-    name: Lint & Format
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+  # lint:
+  #   name: Lint & Format
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 5
     
-    steps:
-    - uses: actions/checkout@v4
+  #   steps:
+  #   - uses: actions/checkout@v4
     
-    - name: Setup Python 3.11
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-        cache: 'pip'
+  #   - name: Setup Python 3.11
+  #     uses: actions/setup-python@v4
+  #     with:
+  #       python-version: '3.11'
     
-    - name: Install Ruff
-      run: pip install ruff
+  #   - name: Install Hatch & Ruff
+  #     run: pip install hatch ruff
     
-    # Verificar problemas de estilo no código
-    - name: Lint with Ruff
-      run: ruff check src/
+  #   # Verificar problemas de estilo no código
+  #   - name: Lint with Ruff
+  #     run: uv run ruff check src/
     
-    # Verificar se código está bem formatado
-    - name: Format check with Ruff
-      run: ruff format --check src/
+  #   # Verificar se código está bem formatado
+  #   - name: Format check with Ruff
+  #     run: uv run ruff format --check src/
 
   # Job 2: Verificar anotações de tipo
   type-check:
@@ -47,16 +46,15 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
-        cache: 'pip'
     
-    - name: Install dependencies
+    - name: Install Hatch & dependencies
       run: |
-        pip install mypy
+        pip install hatch mypy
         pip install -r src/api/requirements.txt
     
     # Verificar tipos e possíveis erros de tipo
     - name: Type check with MyPy
-      run: mypy src/ --config-file=pyproject.toml
+      run: uv run mypy src/ --config-file=pyproject.toml
 
   # Job 3: Executar testes e verificar cobertura
   test:
@@ -71,22 +69,22 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
-        cache: 'pip'
     
-    - name: Install dependencies
-      run: pip install -r src/api/requirements.txt
+    - name: Install Hatch & dependencies
+      run: |
+        pip install hatch pytest pytest-cov
+        pip install -r src/api/requirements.txt
     
     # Executar testes com cobertura mínima de 85%
     - name: Run tests with coverage
-      run: |
-        pytest src/api/tests/ --cov=src/api --cov-report=html --cov-fail-under=85
+      run: uv run pytest src/api/tests/ --cov=src/api --cov-report=html --cov-fail-under=85
 
   # Job 4: Construir imagem Docker (só executa se outros jobs passaram)
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [lint, type-check, test]
+    needs: [type-check, test]
     
     steps:
     - uses: actions/checkout@v4

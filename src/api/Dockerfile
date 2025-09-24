@@ -1,26 +1,34 @@
-# src/api/Dockerfile
-
-# Dockerfile básico para o pipeline CI/CD de uma API em Python.
 FROM python:3.11-slim
 
-# Definir diretório de trabalho
+# Install system deps and uv (fast Python package manager)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -fsSL https://astral.sh/uv/install.sh | sh
+
+# Make uv available on PATH
+ENV PATH="/root/.local/bin:${PATH}"
+
+# Set working directory
 WORKDIR /app
 
-# Copiar requirements e instalar dependências
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy the requirements first for better layer caching
+COPY requirements.txt ./requirements.txt
 
-# Copiar código da aplicação
+# Install Python dependencies using uv (cached, reproducible)
+RUN uv pip install --system --no-cache -r requirements.txt
+
+# Copy the rest of your application code into the container
 COPY . .
 
-# Variáveis de ambiente
+# Set environment variables for Python
 ENV PYTHONPATH=/app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Porta padrão (pode ser alterada caso necessário)
+# Expose the port the app runs on
 EXPOSE 8080
 
-# This command is overridden by docker-compose, but it's good practice
-# to have a correct default command here.
+# Default command (can be overridden by docker-compose)
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

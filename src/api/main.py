@@ -1,8 +1,26 @@
 import os
 from fastapi import FastAPI
+from pydantic import BaseModel
 import uvicorn
+from datetime import date
+from routers.ons_router import create_router
+from dotenv import load_dotenv
 
-app = FastAPI()
+# carrega o arquivo .env que está no mesmo diretório do main.py
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
+
+app = FastAPI(
+    title="ONS Data Fetcher API",
+    description="An API to fetch and filter PARQUET file resources from the ONS open data portal.",
+    version="1.0.0",
+)
+
+app.include_router(create_router())
+
+
+class DataFilter(BaseModel):
+    start_date: date | None
+    end_date: date | None
 
 
 @app.get("/")

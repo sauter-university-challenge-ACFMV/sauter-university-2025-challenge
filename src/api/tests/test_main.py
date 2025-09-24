@@ -1,43 +1,51 @@
-from fastapi.testclient import TestClient
-from main import app
+# src/api/tests/test_main.py
+
 import pytest
-from ci_test import add, multiply
-
-client = TestClient(app)
-"""
-Testes temporários para validação do pipeline CI.
-
-Estes testes serão substituídos pelos testes reais da API.
-"""
+from fastapi.testclient import TestClient
+from typing import Any, Generator
 
 
-def test_read_main() -> None:
+# Fixture única para mockar o GCS, aplicada a todos os testes neste arquivo.
+@pytest.fixture(autouse=True)
+def mock_gcs_repository(monkeypatch: Any) -> None:
+    """Simula o GCSFileRepository para evitar autenticação real durante os testes."""
+
+    class FakeGCSFileRepository:
+        def __init__(self) -> None:
+            self.bucket_name = "fake-bucket"
+
+        def save(self, file: Any, filename: str) -> str:
+            return f"gs://{self.bucket_name}/{filename}"
+
+    import services.ons_service as ons_service_module
+
+    monkeypatch.setattr(ons_service_module, "GCSFileRepository", FakeGCSFileRepository)
+
+
+# Fixture única para fornecer o cliente de teste.
+@pytest.fixture
+def client() -> Generator[TestClient, None, None]:
+    """Fornece um TestClient com as dependências já mockadas."""
+    from main import app
+
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+# --- Testes combinados de ambos os arquivos ---
+
+
+def test_read_main(client: TestClient) -> None:
+    """Testa o endpoint principal ('/') usando um cliente com dependências simuladas."""
     response = client.get("/")
     assert response.status_code == 200
     assert response.json() == {"message": "Hello World"}
 
 
-class TestCIValidation:
-    """Testes básicos para validação do pipeline CI."""
+def test_openapi_and_docs(client: TestClient) -> None:
+    """Testa os endpoints de documentação gerados automaticamente pela FastAPI."""
+    response = client.get("/openapi.json")
+    assert response.status_code == 200
 
-    def test_add_positive(self) -> None:
-        """Testa adição de números positivos."""
-        assert add(2, 3) == 5
-
-    def test_add_negative(self) -> None:
-        """Testa adição com números negativos."""
-        assert add(-2, 3) == 1
-
-    def test_multiply_positive(self) -> None:
-        """Testa multiplicação de números positivos."""
-        assert multiply(3, 4) == 12
-
-    def test_multiply_zero(self) -> None:
-        """Testa multiplicação por zero."""
-        assert multiply(5, 0) == 0
-
-
-@pytest.mark.parametrize("a,b,expected", [(1, 1, 2), (10, 20, 30), (-5, 5, 0)])
-def test_add_parametrized(a: int, b: int, expected: int) -> None:
-    """Testes parametrizados para adição."""
-    assert add(a, b) == expected
+    response = client.get("/docs")
+    assert response.status_code == 200
