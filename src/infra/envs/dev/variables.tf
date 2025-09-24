@@ -33,3 +33,7 @@ variable "google_credentials_json" {
   sensitive = true
 }
 
+variable "repo_id" {
+  description = "Nome do repositório no Artifact Registry onde a imagem está armazenada"
+  type        = string
+}
