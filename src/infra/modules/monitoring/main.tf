@@ -1,4 +1,4 @@
-resource "google_monitoring_alert_policy" "error_5xx_alert" {
+/*resource "google_monitoring_alert_policy" "error_5xx_alert" {
   display_name = "API 5xx Error Rate Alert"
   combiner     = "OR"
   enabled      = true
@@ -53,7 +53,7 @@ resource "google_monitoring_alert_policy" "latency_alert" {
   alert_strategy {
     auto_close = "300s" 
   }
-}
+}*/
 
 
 resource "google_monitoring_notification_channel" "budget_email" {
