@@ -28,14 +28,6 @@ resource "google_cloud_run_v2_service" "svc" {
       traffic
     ]
   }
-}
-
-resource "google_cloud_run_v2_service_iam_binding" "invoker_all" {
-  count    = var.allow_unauthenticated ? 1 : 0
-  name     = google_cloud_run_v2_service.svc.name
-  location = var.region
-  role     = "roles/run.invoker"
-  members  = ["allUsers"]
   dynamic "env" {
     for_each = var.secret_environment_variables
     content {
@@ -48,4 +40,12 @@ resource "google_cloud_run_v2_service_iam_binding" "invoker_all" {
       }
     }
   }
+}
+
+resource "google_cloud_run_v2_service_iam_binding" "invoker_all" {
+  count    = var.allow_unauthenticated ? 1 : 0
+  name     = google_cloud_run_v2_service.svc.name
+  location = var.region
+  role     = "roles/run.invoker"
+  members  = ["allUsers"]
 }
