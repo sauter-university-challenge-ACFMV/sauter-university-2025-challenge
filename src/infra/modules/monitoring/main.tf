@@ -1,4 +1,3 @@
-/*
 resource "google_monitoring_alert_policy" "error_5xx_alert" {
   display_name = "API 5xx Error Rate Alert"
   combiner     = "OR"
@@ -26,9 +25,9 @@ resource "google_monitoring_alert_policy" "error_5xx_alert" {
     auto_close = "300s"
   }
 }
-*/
 
-/*
+
+
 resource "google_monitoring_alert_policy" "latency_alert" {
   display_name = "API Latency Alert"
   combiner     = "OR"
@@ -55,7 +54,7 @@ resource "google_monitoring_alert_policy" "latency_alert" {
     auto_close = "300s" 
   }
 }
-*/
+
 
 resource "google_monitoring_notification_channel" "budget_email" {
   project      = var.project_id
@@ -81,7 +80,7 @@ resource "google_monitoring_dashboard" "api_health" {
             dataSets = [{
               timeSeriesQuery = {
                 timeSeriesFilter = {
-                  filter = "metric.type=\"run.googleapis.com/request/latencies\" resource.type=\"cloud_run_revision\" resource.label.service_name=\"${var.service_name}\""
+                  filter = "metric.type=\"run.googleapis.com/request/latencies\" resource.type=\"cloud_run_revision\" resource.labels.service_name=\"${var.service_name}\""
                   aggregation = {
                     alignmentPeriod    = "60s"
                     perSeriesAligner   = "ALIGN_DELTA"
@@ -106,7 +105,7 @@ resource "google_monitoring_dashboard" "api_health" {
             dataSets = [{
               timeSeriesQuery = {
                 timeSeriesFilter = {
-                  filter = "metric.type=\"run.googleapis.com/request/count\" resource.type=\"cloud_run_revision\" resource.label.service_name=\"${var.service_name}\" metric.label.response_code_class=\"5xx\""
+                  filter = "metric.type=\"run.googleapis.com/request/count\" resource.type=\"cloud_run_revision\" resource.labels.service_name=\"${var.service_name}\" metric.label.response_code_class=\"5xx\""
                   aggregation = {
                     alignmentPeriod    = "60s"
                     perSeriesAligner   = "ALIGN_RATE"
@@ -131,7 +130,7 @@ resource "google_monitoring_dashboard" "api_health" {
             dataSets = [{
               timeSeriesQuery = {
                 timeSeriesFilter = {
-                  filter = "metric.type=\"run.googleapis.com/request/count\" resource.type=\"cloud_run_revision\" resource.label.service_name=\"${var.service_name}\""
+                  filter = "metric.type=\"run.googleapis.com/request/count\" resource.type=\"cloud_run_revision\" resource.labels.service_name=\"${var.service_name}\""
                   aggregation = {
                     alignmentPeriod    = "60s"
                     perSeriesAligner   = "ALIGN_RATE"
@@ -156,7 +155,7 @@ resource "google_monitoring_dashboard" "api_health" {
             dataSets = [{
               timeSeriesQuery = {
                 timeSeriesFilter = {
-                  filter = "metric.type=\"billing.googleapis.com/billing_account/current_month/cost\" resource.type=\"cloud_run_revision\" metric.label.currency=\"BRL\" resource.label.service_name=\"${var.service_name}\""
+                  filter = "metric.type=\"billing.googleapis.com/billing_account/current_month/cost\" resource.type=\"cloud_run_revision\" metric.label.currency=\"BRL\" resource.labels.service_name=\"${var.service_name}\""
                   aggregation = {
                     alignmentPeriod    = "86400s"
                     perSeriesAligner   = "ALIGN_SUM"
@@ -181,7 +180,7 @@ resource "google_monitoring_dashboard" "api_health" {
             dataSets = [{
               timeSeriesQuery = {
                 timeSeriesFilter = {
-                  filter = "metric.type=\"logging.googleapis.com/user/api-server-errors\" resource.type=\"cloud_run_revision\" resource.label.service_name=\"${var.service_name}\""
+                  filter = "metric.type=\"logging.googleapis.com/user/api-server-errors\" resource.type=\"cloud_run_revision\" resource.labels.service_name=\"${var.service_name}\""
                   aggregation = {
                     alignmentPeriod    = "300s"
                     perSeriesAligner   = "ALIGN_SUM"
