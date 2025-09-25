@@ -17,6 +17,7 @@ numpy<2.0
 google-cloud-storage==3.4.0
 google-auth==2.26.1
 google-auth-oauthlib==1.1.0
+google-cloud-bigquery==3.13.0
 # Ferramentas de qualidade de código e testes
 pytest==7.4.3
 pytest-cov==4.1.0

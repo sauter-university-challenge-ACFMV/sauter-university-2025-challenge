@@ -1,7 +1,7 @@
 import os
 import json
 from typing import IO
-from google.cloud import storage  # type: ignore[import-untyped]
+from google.cloud import storage  # type: ignore[attr-defined]
 from google.oauth2 import service_account  # type: ignore[import-untyped]
 from repositories.base_repository import FileRepository
 from utils.logger import LogLevel, log
