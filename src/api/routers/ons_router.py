@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Body, status
+from fastapi.responses import JSONResponse
 from models.ons_dto import DateFilterDTO
-import httpx
 from services.ons_service import OnsService, ProcessResponse
 from pydantic import BaseModel
 from typing import Dict, Any, List
@@ -11,6 +11,10 @@ class ApiResponse(BaseModel):
     message: str
     data: Dict[str, Any] | None = None
 
+class ApiBulkResponse(BaseModel):
+    status: str
+    message: str
+    data: List[Dict[str, Any]] | None = None
 
 class OnsRouter:
     def __init__(self, service: OnsService | None = None) -> None:
@@ -22,63 +26,28 @@ class OnsRouter:
         @self.router.post(
             "/filter-parquet-files",
             response_model=ApiResponse,
-            status_code=200,
-            summary="Filter ONS PARQUET Files",
-            description=(
-                "Fetches and filters a list of PARQUET file resources from the ONS API "
-                "based on dates provided in the request body. Returns detailed success/failure information."
-            ),
+            summary="Processa um único filtro de arquivos PARQUET da ONS",
+            description="Recebe um único objeto de filtro e inicia a ingestão dos dados correspondentes.",
             responses={
                 200: {
-                    "description": "All files processed successfully or partial success",
+                    "description": "Processamento concluído com sucesso total ou parcial.",
                     "content": {
                         "application/json": {
                             "examples": {
                                 "all_success": {
-                                    "summary": "All files processed successfully",
+                                    "summary": "Sucesso total",
                                     "value": {
                                         "status": "success",
-                                        "message": "All 3 files processed successfully",
-                                        "data": {
-                                            "success_downloads": [
-                                                {
-                                                    "url": "https://example.com/file1.parquet",
-                                                    "year": 2021,
-                                                    "package": "ear-diario-por-reservatorio",
-                                                    "data_type": "parquet",
-                                                    "gcs_path": "ear-diario-por-reservatorio/2021/file1.parquet",
-                                                    "bucket": "my-bucket"
-                                                }
-                                            ],
-                                            "failed_downloads": [],
-                                            "total_processed": 3,
-                                            "success_count": 3,
-                                            "failure_count": 0
-                                        }
+                                        "message": "Todos os 3 arquivos foram processados com sucesso.",
+                                        "data": {"success_count": 3, "failure_count": 0}
                                     }
                                 },
                                 "partial_success": {
-                                    "summary": "Some files failed to process",
+                                    "summary": "Sucesso parcial",
                                     "value": {
                                         "status": "partial_success",
-                                        "message": "Partial success: 2/3 files processed successfully",
-                                        "data": {
-                                            "success_downloads": [],
-                                            "failed_downloads": [
-                                                {
-                                                    "url": "https://example.com/file3.parquet",
-                                                    "year": 2023,
-                                                    "package": "ear-diario-por-reservatorio",
-                                                    "data_type": "parquet",
-                                                    "error_message": "Failed to fetch URL: HTTP 404",
-                                                    "gcs_path": "",
-                                                    "bucket": "my-bucket"
-                                                }
-                                            ],
-                                            "total_processed": 3,
-                                            "success_count": 2,
-                                            "failure_count": 1
-                                        }
+                                        "message": "Sucesso parcial: 2/3 arquivos processados.",
+                                        "data": {"success_count": 2, "failure_count": 1}
                                     }
                                 }
                             }
@@ -100,123 +69,101 @@ class OnsRouter:
                     }
                 },
                 422: {
-                    "description": "All files failed to process",
+                    "description": "Todos os arquivos falharam ao serem processados.",
                     "content": {
                         "application/json": {
                             "example": {
                                 "status": "failed",
-                                "message": "All 3 files failed to process",
-                                "data": {
-                                    "success_downloads": [],
-                                    "failed_downloads": [
-                                        {
-                                            "url": "https://example.com/file1.parquet",
-                                            "year": 2021,
-                                            "package": "ear-diario-por-reservatorio",
-                                            "data_type": "parquet",
-                                            "error_message": "Data already exists in the raw table",
-                                            "gcs_path": "ear-diario-por-reservatorio/2021/file1.parquet",
-                                            "bucket": "my-bucket"
-                                        }
-                                    ],
-                                    "total_processed": 3,
-                                    "success_count": 0,
-                                    "failure_count": 3
-                                }
+                                "message": "Todos os 3 arquivos falharam ao processar.",
+                                "data": {"success_count": 0, "failure_count": 3}
                             }
                         }
                     }
                 },
-                500: {"description": "Internal server error"},
-                503: {"description": "Service unavailable - ONS API error"}
+                500: {"description": "Erro interno inesperado no servidor."}
             }
         )
-        async def filter_ons_parquet_files_endpoint(
+        async def filter_parquet_files_endpoint(
             filters: DateFilterDTO = Body(...)
-        ) -> ApiResponse:
-            """
-            API Endpoint to filter and process ONS Parquet files.
-            
-            Returns detailed information about successful and failed downloads,
-            with appropriate HTTP status codes based on the outcome.
-            """
+        ) -> JSONResponse | ApiResponse:
             try:
                 result: ProcessResponse = await self.service.process_reservoir_data(filters)
                 
-                # Determine response based on results
+                response_data = {
+                    "success_downloads": result.success_downloads,
+                    "failed_downloads": result.failed_downloads,
+                    "total_processed": result.total_processed,
+                    "success_count": result.success_count,
+                    "failure_count": result.failure_count,
+                }
+
                 if result.failure_count == 0:
-                    # All successful
-                    return ApiResponse(
-                        status="success",
-                        message=f"All {result.total_processed} files processed successfully",
-                        data={
-                            "success_downloads": result.success_downloads,
-                            "failed_downloads": result.failed_downloads,
-                            "total_processed": result.total_processed,
-                            "success_count": result.success_count,
-                            "failure_count": result.failure_count,
-                        }
-                    )
+                    return ApiResponse(status="success", message=f"Todos os {result.total_processed} arquivos foram processados com sucesso.", data=response_data)
+                
                 elif result.success_count == 0:
-                    # All failed
-                    return ApiResponse(
-                        status="failed",
-                        message=f"All {result.total_processed} files failed to process",
-                        data={
-                            "success_downloads": result.success_downloads,
-                            "failed_downloads": result.failed_downloads,
-                            "total_processed": result.total_processed,
-                            "success_count": result.success_count,
-                            "failure_count": result.failure_count,
-                        }
-                    )
+                    content = ApiResponse(status="failed", message=f"Todos os {result.total_processed} arquivos falharam ao processar.", data=response_data).model_dump()
+                    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=content)
+
                 else:
-                    # Partial success
-                    return ApiResponse(
-                        status="partial_success",
-                        message=f"Partial success: {result.success_count}/{result.total_processed} files processed successfully",
-                        data={
-                            "success_downloads": result.success_downloads,
-                            "failed_downloads": result.failed_downloads,
-                            "total_processed": result.total_processed,
-                            "success_count": result.success_count,
-                            "failure_count": result.failure_count,
-                        }
-                    )
-            
-            except ValueError as exc:
-                # Configuration errors (missing env vars, invalid parameters)
-                return ApiResponse(
-                    status="error",
-                    message=str(exc),
-                    data={"error_type": "configuration_error"}
-                )
-            
-            except httpx.RequestError as exc:
-                # Network/connection errors to ONS API
-                return ApiResponse(
-                    status="error",
-                    message=f"Error requesting ONS API: {exc}",
-                    data={"error_type": "network_error"}
-                )
-            
-            except httpx.HTTPStatusError as exc:
-                # ONS API returned an error status
-                return ApiResponse(
-                    status="error",
-                    message=f"ONS API returned an error: {exc}",
-                    data={
-                        "error_type": "api_error",
-                        "api_status_code": exc.response.status_code
-                    }
-                )
+                    return ApiResponse(status="partial_success", message=f"Sucesso parcial: {result.success_count}/{result.total_processed} arquivos processados.", data=response_data)
             
             except Exception as exc:
-                # Unexpected errors
-                return ApiResponse(
-                    status="error",
-                    message=f"An unexpected error occurred: {str(exc)}",
-                    data={"error_type": "internal_error"}
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Ocorreu um erro inesperado: {str(exc)}"
+                )
+
+        @self.router.post(
+            "/bulk-ingest-parquet-files",
+            response_model=ApiBulkResponse,
+            summary="Processa um lote de filtros de arquivos PARQUET da ONS",
+            description="Recebe uma lista de filtros (DTOs) e processa cada um em paralelo. Ideal para jobs agendados.",
+            responses={
+                200: {
+                    "description": "Lote de filtros processado. O corpo da resposta contém o resultado detalhado de cada filtro.",
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "status": "success",
+                                "message": "Lote de 2 filtros processado.",
+                                "data": [
+                                    {
+                                        "success_downloads": [{"url": "...", "gcs_path": "..."}],
+                                        "failed_downloads": [],
+                                        "total_processed": 1,
+                                        "success_count": 1,
+                                        "failure_count": 0
+                                    },
+                                    {
+                                        "success_downloads": [],
+                                        "failed_downloads": [{"url": "...", "error_message": "..."}],
+                                        "total_processed": 1,
+                                        "success_count": 0,
+                                        "failure_count": 1
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                500: {"description": "Erro interno inesperado ao processar o lote."}
+            }
+        )
+        async def bulk_ingest_parquet_files_endpoint(
+            filters_list: List[DateFilterDTO] = Body(...)
+        ) -> ApiBulkResponse:
+            try:
+                results: List[ProcessResponse] = await self.service.process_reservoir_data_bulk(filters_list)
+                results_dict = [result.model_dump() for result in results]
+                return ApiBulkResponse(
+                    status="success",
+                    message=f"Lote de {len(results_dict)} filtros processado.",
+                    data=results_dict
+                )
+            except Exception as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Ocorreu um erro inesperado ao processar o lote: {str(exc)}"
                 )
 
 
