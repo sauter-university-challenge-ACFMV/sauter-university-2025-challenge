@@ -203,7 +203,7 @@ cp .env.example .env  # Edite os valores conforme necessário
 
 4) Rode a API:
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ### Variáveis de ambiente da API
