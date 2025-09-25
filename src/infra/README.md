@@ -148,7 +148,9 @@ terraform apply
 * Canal de e‑mail (Google Group) criado e **verificado**.
 * Para novos canais: criar no módulo e **verificar** via API (sendVerificationCode + verify).
 
-### 6.8 Budget (`modules/budget`)
+### 6.8 Monitoring (`modules/logging`)
+
+### 6.9 Budget (`modules/budget`)
 
 * Budget **BRL 300** para o projeto, thresholds 50/90/100, notifica o canal de e‑mail.
 * Para alterar valor/moeda/thresholds, edite a chamada do módulo no env.
