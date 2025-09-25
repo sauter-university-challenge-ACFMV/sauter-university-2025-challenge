@@ -3,14 +3,8 @@ name: iac-dev
 on:
   pull_request:
     branches: [ "main" ]
-    paths:
-      - "src/infra/**"
-      - ".github/workflows/iac-dev.yaml"
   push:
     branches: [ "main" ]
-    paths:
-      - "src/infra/**"
-      - ".github/workflows/iac-dev.yaml"
   workflow_dispatch:
 
 permissions:

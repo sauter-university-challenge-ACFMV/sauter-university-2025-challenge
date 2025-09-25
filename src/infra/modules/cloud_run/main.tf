@@ -1,7 +1,7 @@
 resource "google_cloud_run_v2_service" "svc" {
-	name     = var.name
-	location = var.region
-	ingress  = "INGRESS_TRAFFIC_ALL"
+  name     = var.name
+  location = var.region
+  ingress  = "INGRESS_TRAFFIC_ALL"
 
   labels = {
     env     = var.env
@@ -11,8 +11,22 @@ resource "google_cloud_run_v2_service" "svc" {
 
   template {
     service_account = var.service_account_email
+    
     containers {
       image = var.image
+      
+      dynamic "env" {
+        for_each = var.secret_environment_variables
+        content {
+          name = env.key
+          value_source {
+            secret_key_ref {
+              secret  = env.value.secret_name
+              version = env.value.secret_version
+            }
+          }
+        }
+      }
     }
   }
 
@@ -28,12 +42,4 @@ resource "google_cloud_run_v2_service" "svc" {
       traffic
     ]
   }
-}
-
-resource "google_cloud_run_v2_service_iam_binding" "invoker_all" {
-  count    = var.allow_unauthenticated ? 1 : 0
-  name     = google_cloud_run_v2_service.svc.name
-  location = var.region
-  role     = "roles/run.invoker"
-  members  = ["allUsers"]
 }
