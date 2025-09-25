@@ -96,21 +96,43 @@ class OnsService:
 
             df = self._convert_all_columns_to_string(df)
             buffer = self._dataframe_to_parquet_buffer(df)
+            # this is because one of our fonts, has dat intead of data or date
+            date_column = next((col for col in df.columns if "dat" in col.lower()), None)
+            
             gcs_path = self._build_gcs_path(
                 original_filename, resource_year, package_name
-            )
-            try:
-                gcs_url = self._save_to_gcs(buffer, gcs_path)
+            )  
+            if not date_column:
                 log(
-                    f"Successfully saved to bucket path: {gcs_path}, URL: {gcs_url}",
-                    level=LogLevel.INFO,
-                )
-            except Exception as e:
-                log(
-                    f"Failed to save to bucket path {gcs_path}: {e}\n{traceback.format_exc()}",
-                    level=LogLevel.ERROR,
+                    f"the file doesnt has date columns",
+                    level=LogLevel.DEBUG,
                 )
                 return ""
+            # assumin that the table is date ordered
+            df = df.sort_values(by=date_column)
+            first_value = df[date_column].iloc[0]
+            last_value = df[date_column].iloc[-1]
+
+            log(f"First date: {first_value}, Last date: {last_value}", level=LogLevel.DEBUG)
+            if not self.repository.raw_table_has_value(package_name, date_column, last_value):
+
+                try:
+                    gcs_url = self._save_to_gcs(buffer, gcs_path)
+                    log(
+                        f"Successfully saved to bucket path: {gcs_path}, URL: {gcs_url}",
+                        level=LogLevel.INFO,
+                    )
+                except Exception as e:
+                    log(
+                        f"Failed to save to bucket path {gcs_path}: {e}\n{traceback.format_exc()}",
+                        level=LogLevel.ERROR,
+                    )   
+                    return ""
+            else:
+                log(
+                    f"Data from the url already exists",
+                    level=LogLevel.DEBUG,
+                )
 
             return gcs_path
 
