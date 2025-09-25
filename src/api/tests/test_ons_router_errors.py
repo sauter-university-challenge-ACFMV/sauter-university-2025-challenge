@@ -41,7 +41,7 @@ def _payload() -> dict:
 def test_value_error_translates_to_500(monkeypatch: Any, client: TestClient) -> None:
     from services.ons_service import OnsService
 
-    async def fake(_self: Any, filters: Any) -> None:
+    async def fake(_self: Any, filters: Any) -> Any:
         raise ValueError("bad")
 
     monkeypatch.setattr(OnsService, "process_reservoir_data", fake)
@@ -52,7 +52,7 @@ def test_value_error_translates_to_500(monkeypatch: Any, client: TestClient) -> 
 def test_request_error_translates_to_503(monkeypatch: Any, client: TestClient) -> None:
     from services.ons_service import OnsService
 
-    async def fake(_self: Any, filters: Any) -> None:
+    async def fake(_self: Any, filters: Any) -> Any:
         raise httpx.RequestError("net")
 
     monkeypatch.setattr(OnsService, "process_reservoir_data", fake)
@@ -68,7 +68,7 @@ def test_http_status_error_propagates_status(
     class Resp:
         status_code = 418
 
-    async def fake(_self: Any, filters: Any) -> None:
+    async def fake(_self: Any, filters: Any) -> Any:
         raise httpx.HTTPStatusError("teapot", request=None, response=Resp())  # type: ignore
 
     monkeypatch.setattr(OnsService, "process_reservoir_data", fake)
@@ -79,7 +79,7 @@ def test_http_status_error_propagates_status(
 def test_generic_error_becomes_500(monkeypatch: Any, client: TestClient) -> None:
     from services.ons_service import OnsService
 
-    async def fake(_self: Any, filters: Any) -> None:
+    async def fake(_self: Any, filters: Any) -> Any:
         raise RuntimeError("boom")
 
     monkeypatch.setattr(OnsService, "process_reservoir_data", fake)

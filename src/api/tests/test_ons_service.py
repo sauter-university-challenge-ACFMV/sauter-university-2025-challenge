@@ -3,7 +3,7 @@ import asyncio
 import pytest
 from typing import Any
 
-from services.ons_service import OnsService
+from services.ons_service import OnsService, ProcessResponse
 
 
 def test_process_reservoir_data_success_filters_and_downloads(monkeypatch: Any) -> None:
@@ -63,8 +63,17 @@ def test_process_reservoir_data_success_filters_and_downloads(monkeypatch: Any) 
     service = OnsService()
 
     # Short-circuit the heavy download path
-    async def fake_download_parquet(client: Any, download_info: Any) -> str:
-        return f"{download_info.package}/{download_info.year}/file.parquet"
+    async def fake_download_parquet(client: Any, download_info: Any) -> Any:
+        from services.ons_service import DownloadResult
+        return DownloadResult(
+            url=download_info.url,
+            year=download_info.year,
+            package=download_info.package,
+            data_type=download_info.data_type,
+            success=True,
+            gcs_path=f"{download_info.package}/{download_info.year}/file.parquet",
+            bucket="test-bucket"
+        )
 
     monkeypatch.setattr(service, "_download_parquet", fake_download_parquet)
 
@@ -79,12 +88,14 @@ def test_process_reservoir_data_success_filters_and_downloads(monkeypatch: Any) 
     result = asyncio.run(service.process_reservoir_data(filters))
 
     # Assert: should include only 2022 and 2023 parquet resources
-    assert isinstance(result, list)
-    assert len(result) == 2
-    urls = [r["url"] for r in result]
+    assert isinstance(result, ProcessResponse)
+    assert result.success_count == 2
+    assert result.failure_count == 0
+    assert len(result.success_downloads) == 2
+    urls = [r["url"] for r in result.success_downloads]
     assert "https://cdn/ear_2022.parquet" in urls
     assert "https://cdn/ear_2023.parquet" in urls
-    for item in result:
+    for item in result.success_downloads:
         assert item["bucket"] == "test-bucket"
         assert item["gcs_path"].endswith("/file.parquet")
 
@@ -130,8 +141,9 @@ def test_process_reservoir_data_no_resources(monkeypatch: Any) -> None:
         package="ear-diario-por-reservatorio",
     )
 
-    result = asyncio.run(service.process_reservoir_data(filters))
-    assert result == []
+    with pytest.raises(Exception) as exc_info:
+        asyncio.run(service.process_reservoir_data(filters))
+    assert "No resources found in the package" in str(exc_info.value)
 
 
 def test_build_gcs_path_uses_year_partition(monkeypatch: Any) -> None:

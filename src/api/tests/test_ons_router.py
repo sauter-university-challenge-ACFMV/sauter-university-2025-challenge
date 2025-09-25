@@ -47,8 +47,15 @@ def test_filter_parquet_files_endpoint_success(
 
     os.environ["ONS_API_URL"] = "https://example.com/api"
 
-    async def fake_process(_self: Any, filters: Any) -> list[dict]:
-        return [{"url": "u", "gcs_path": "p", "bucket": "b"}]
+    async def fake_process(_self: Any, filters: Any) -> Any:
+        from services.ons_service import ProcessResponse
+        return ProcessResponse(
+            success_downloads=[{"url": "u", "gcs_path": "p", "bucket": "b"}],
+            failed_downloads=[],
+            total_processed=1,
+            success_count=1,
+            failure_count=0
+        )
 
     monkeypatch.setattr(OnsService, "process_reservoir_data", fake_process)
 

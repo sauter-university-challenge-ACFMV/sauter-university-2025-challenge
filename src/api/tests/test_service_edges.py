@@ -3,7 +3,7 @@ import asyncio
 import httpx
 from typing import Any
 
-from services.ons_service import OnsService, DownloadInfo
+from services.ons_service import OnsService, DownloadInfo, DownloadResult
 from models.ons_dto import DateFilterDTO
 
 
@@ -82,7 +82,9 @@ def test_download_parquet_handles_read_error(monkeypatch: Any) -> None:
         url="http://u/f.parquet", year=2023, package="p", data_type="parquet"
     )
     out = asyncio.run(s._download_parquet(httpx.AsyncClient(), info))
-    assert out == ""
+    assert isinstance(out, DownloadResult)
+    assert out.success == False
+    assert "Failed to read source file" in out.error_message
 
 
 def test_process_reservoir_data_missing_env(monkeypatch: Any) -> None:

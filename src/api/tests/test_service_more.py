@@ -94,7 +94,8 @@ def test_download_parquet_success(monkeypatch: Any) -> None:
     
     assert isinstance(out, DownloadResult)
     assert out.success == True
-    assert out.gcs_path == "p/2023/01/24/f.parquet"  # Uses current date for current year
+    # Since 2023 is now a past year, it uses year-only format
+    assert out.gcs_path == "p/2023/f.parquet"
     assert out.error_message == ""
 
 
