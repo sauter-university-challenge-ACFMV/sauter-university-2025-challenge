@@ -33,10 +33,10 @@ A tabela abaixo consolida as atividades com base nos commits registrados no repo
 |--------|---------|---------------------|-----------------------|
 | **Adenilson Ramos** | 18–25/09/2025 | Estruturação inicial do monorepo, configuração de IAM/WIF, módulos Terraform (Cloud Run, Artifact Registry, BigQuery, GCS), budgets e CI Terraform com WIF, merges finais das tasks de scheduler e ML. | `bad2cbc`, `b329175`, `c07151a`, `447c552`, `0d784dd`, `062791e`, `836ad8d` |
 | **Clauderson Branco Xavier** | 19–25/09/2025 | Pipelines CI/CD (qualidade + deploy Cloud Run), documentação ELT e CI, criação de alertas/logging/dashboards, ajustes Terraform (budget labels, variáveis) e ingestão BQ. | `2c8b855`, `0d0d889`, `7a2210a`, `7853aaa`, `61c1156`, `eaed9ac` |
-| **Raylandson Cesário** | 23–25/09/2025 | API FastAPI (routers, services, repositories), mudança para `uv`, testes extensivos, verificação de duplicidade no BQ, bulk ingest, ajustes Terraform de envs. | `d40ddba`, `6a0f7c2`, `b42b33d`, `f28da5b`, `d586b84`, `5e8d04c` |
+| **Raylandson Cesário** | 23–25/09/2025 | API FastAPI (routers, services, repositories), mudança para `uv`, testes extensivos, verificação de duplicidade no BQ, ingest, bulk ingest, ajustes Terraform de envs, criação de scheduler para ingestão automática dos dados. | `d40ddba`, `6a0f7c2`, `b42b33d`, `f28da5b`, `d586b84`, `5e8d04c` |
 | **Gabriel Carvalho (iamgabs)** | 14–17/09/2025 | Commit inicial, desenho de arquitetura e Docker Compose base. | `6fead53`, `fe56ce4`, `48ad4ac` |
 | **Mariane Melo** | 22–25/09/2025 | Model card do modelo de previsão, suporte na revisão de tagging de custo e monitoring. | `dabcc4c`, `bc4e23b`, `08aa179` |
-| **Filipe Tavares** | 23/09/2025 | Padrão repository e merge dos fluxos de ingestão com parquet local. | `c73d72f`, `43998bd` |
+| **Filipe Tavares** | 23/09/2025 | Padrão repository, conexão da API com gcs, criação do endpoint GET com paginação para retornar os dados do BQ. | `c73d72f`, `43998bd` |
 
 > **Observação**: datas e commits extraídos via `git log --author` com formato `%ad | %h | %s`.
 
@@ -301,3 +301,4 @@ Versionar releases futuras seguindo semântica (major.minor.patch).
 ---
 
 > Última atualização: 25/09/2025.
+
