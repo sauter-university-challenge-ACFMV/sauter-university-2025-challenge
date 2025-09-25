@@ -153,8 +153,8 @@ class OnsRouter:
             filters_list: List[DateFilterDTO] = Body(...)
         ) -> ApiBulkResponse:
             try:
-                results: List[ProcessResponse] = await self.service.process_reservoir_data_bulk(filters_list)
-                results_dict = [result.model_dump() for result in results]
+                results: List[ProcessResponse | BaseException] = await self.service.process_reservoir_data_bulk(filters_list)
+                results_dict = [result.model_dump() for result in results if not isinstance(result, BaseException)]
                 return ApiBulkResponse(
                     status="success",
                     message=f"Lote de {len(results_dict)} filtros processado.",

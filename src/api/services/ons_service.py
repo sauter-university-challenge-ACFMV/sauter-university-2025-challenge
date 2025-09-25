@@ -392,7 +392,7 @@ class OnsService:
     
     async def process_reservoir_data_bulk(
         self, filters_list: List[DateFilterDTO]
-    ) -> List[ProcessResponse]:
+    ) -> List[ProcessResponse | BaseException]:
         """
         Recebe uma lista de filtros DTO e processa cada um em paralelo.
         
@@ -408,8 +408,9 @@ class OnsService:
         ]
         
         # Executa todas as tarefas concorrentemente e aguarda a conclusão
-        results: List[ProcessResponse] = await asyncio.gather(*tasks, return_exceptions=True)
-
+        results: List[ProcessResponse | BaseException] = await asyncio.gather(
+            *tasks, return_exceptions=True
+        )
         # Opcional: Logar exceções inesperadas que o gather possa ter capturado
         final_results = []
         for i, result in enumerate(results):
