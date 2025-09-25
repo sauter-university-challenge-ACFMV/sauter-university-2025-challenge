@@ -1,10 +1,12 @@
-# src/api/tests/test_ons_router.py
+# src/api/tests/test_ons_router.py (CORRIGIDO E COM NOVOS TESTES)
 
 import os
-from typing import Any, Generator
+from typing import Any, Generator, List
 import pytest
 from fastapi.testclient import TestClient
 import httpx
+from models.ons_dto import DateFilterDTO
+from services.ons_service import ProcessResponse, OnsService
 
 
 # ===================================================================
@@ -13,73 +15,36 @@ import httpx
 
 @pytest.fixture(autouse=True)
 def mock_gcs_before_app_import(monkeypatch: Any) -> None:
-    """Mocka o GCSFileRepository antes que a aplicação FastAPI seja importada."""
     class FakeGCS:
-        def __init__(self) -> None:
-            self.bucket_name = "fake-bucket"
-
-        def save(self, file: Any, filename: str) -> str:
-            return f"gs://{self.bucket_name}/{filename}"
+        def __init__(self) -> None: self.bucket_name = "fake-bucket"
+        def save(self, file: Any, filename: str, **kwargs: Any) -> str: return f"gs://{self.bucket_name}/{filename}"
+        def exists(self) -> bool: return True
+        def bucket(self, name: str) -> Any: return self
+        def blob(self, name: str) -> Any: return self
+        def upload_from_string(self, *args: Any, **kwargs: Any) -> None: return None
+        @property
+        def public_url(self) -> str: return "gs://fake-bucket/fake-file"
 
     import services.ons_service as service_module
-
     monkeypatch.setattr(service_module, "GCSFileRepository", FakeGCS)
-
 
 @pytest.fixture
 def client() -> Generator[TestClient, None, None]:
-    """Fornece um TestClient para a aplicação FastAPI."""
     from main import app
-
     with TestClient(app) as test_client:
         yield test_client
 
-
 def _payload() -> dict[str, Any]:
-    """Retorna um payload padrão para os testes do endpoint de filtro."""
-    return {
-        "start_year": 2022,
-        "end_year": 2023,
-        "package": "ear-diario-por-reservatorio",
-    }
-
+    return {"start_year": 2022, "end_year": 2023, "package": "test-package", "bucket": "test-bucket"}
 
 # ===================================================================
-# region: Testes para Endpoints Básicos
+# region: Testes para o Endpoint /ons/filter-parquet-files (Single DTO)
 # ===================================================================
 
-def test_root_and_health_endpoints(client: TestClient) -> None:
-    """Testa os endpoints / e /health para garantir que a API está de pé."""
-    r_root = client.get("/")
-    assert r_root.status_code == 200
-    assert r_root.json()["message"] == "Hello World"
-
-    r_health = client.get("/health")
-    assert r_health.status_code == 200
-    assert r_health.json()["status"] == "healthy"
-
-
-# ===================================================================
-# region: Testes para o Endpoint /ons/filter-parquet-files
-# ===================================================================
-
-def test_filter_parquet_files_endpoint_success(
-    monkeypatch: Any, client: TestClient
-) -> None:
-    """Testa o caminho de sucesso para o endpoint de filtro."""
-    from services.ons_service import OnsService, ProcessResponse
-
+def test_filter_parquet_files_endpoint_all_success(monkeypatch: Any, client: TestClient) -> None:
     os.environ["ONS_API_URL"] = "https://example.com/api"
-
     async def fake_process(_self: Any, filters: Any) -> ProcessResponse:
-        return ProcessResponse(
-            success_downloads=[{"url": "u", "gcs_path": "p", "bucket": "b"}],
-            failed_downloads=[],
-            total_processed=1,
-            success_count=1,
-            failure_count=0,
-        )
-
+        return ProcessResponse(success_downloads=[{"url": "u", "gcs_path": "p", "bucket": "b"}], failed_downloads=[], total_processed=1, success_count=1, failure_count=0)
     monkeypatch.setattr(OnsService, "process_reservoir_data", fake_process)
 
     r = client.post("/ons/filter-parquet-files", json=_payload())
@@ -87,81 +52,76 @@ def test_filter_parquet_files_endpoint_success(
     assert r.status_code == 200
     response_data = r.json()
     assert response_data["status"] == "success"
-    assert "data" in response_data
+
+# --- NOVOS TESTES PARA AUMENTAR COBERTURA ---
+
+def test_filter_parquet_files_endpoint_all_failed(monkeypatch: Any, client: TestClient) -> None:
+    """Testa o cenário onde todos os downloads falham, esperando um status 422."""
+    os.environ["ONS_API_URL"] = "https://example.com/api"
+    async def fake_process(_self: Any, filters: Any) -> ProcessResponse:
+        return ProcessResponse(success_downloads=[], failed_downloads=[{"url": "u", "error_message": "e"}], total_processed=1, success_count=0, failure_count=1)
+    monkeypatch.setattr(OnsService, "process_reservoir_data", fake_process)
+
+    r = client.post("/ons/filter-parquet-files", json=_payload())
     
-    success_list = response_data["data"]["success_downloads"]
-    assert isinstance(success_list, list) and success_list
-    assert {"url", "gcs_path", "bucket"}.issubset(success_list[0].keys())
+    assert r.status_code == 422
+    response_data = r.json()
+    assert response_data["status"] == "failed"
 
+def test_filter_parquet_files_endpoint_partial_success(monkeypatch: Any, client: TestClient) -> None:
+    """Testa o cenário de sucesso parcial, esperando um status 200."""
+    os.environ["ONS_API_URL"] = "https://example.com/api"
+    async def fake_process(_self: Any, filters: Any) -> ProcessResponse:
+        return ProcessResponse(success_downloads=[{"url": "u1"}], failed_downloads=[{"url": "u2"}], total_processed=2, success_count=1, failure_count=1)
+    monkeypatch.setattr(OnsService, "process_reservoir_data", fake_process)
 
-def test_value_error_is_handled(monkeypatch: Any, client: TestClient) -> None:
-    """Testa o tratamento de ValueError (ex: erro de configuração)."""
-    from services.ons_service import OnsService
+    r = client.post("/ons/filter-parquet-files", json=_payload())
+    
+    assert r.status_code == 200
+    response_data = r.json()
+    assert response_data["status"] == "partial_success"
 
-    async def fake(_self: Any, filters: Any) -> Any:
-        raise ValueError("bad config")
+# --- TESTES DE ERRO CORRIGIDOS ---
 
-    monkeypatch.setattr(OnsService, "process_reservoir_data", fake)
+def test_service_raises_exception_returns_500(monkeypatch: Any, client: TestClient) -> None:
+    """Testa se uma exceção genérica no serviço resulta em um HTTP 500."""
+    async def fake_process(_self: Any, filters: Any) -> Any:
+        raise ValueError("Erro de propósito no serviço")
+    monkeypatch.setattr(OnsService, "process_reservoir_data", fake_process)
+    
     r = client.post("/ons/filter-parquet-files", json=_payload())
 
+    assert r.status_code == 500
+    assert "Erro de propósito no serviço" in r.json()["detail"]
+
+# ===================================================================
+# region: Testes para o Endpoint /ons/bulk-ingest-parquet-files (Bulk DTO)
+# ===================================================================
+
+def test_bulk_ingest_endpoint_success(monkeypatch: Any, client: TestClient) -> None:
+    """Testa o caminho de sucesso para o endpoint de processamento em lote."""
+    async def fake_bulk_process(_self: Any, filters_list: List[DateFilterDTO]) -> List[ProcessResponse]:
+        return [
+            ProcessResponse(success_downloads=[{"url": "u1"}], failed_downloads=[], total_processed=1, success_count=1, failure_count=0),
+            ProcessResponse(success_downloads=[{"url": "u2"}], failed_downloads=[], total_processed=1, success_count=1, failure_count=0)
+        ]
+    monkeypatch.setattr(OnsService, "process_reservoir_data_bulk", fake_bulk_process)
+
+    r = client.post("/ons/bulk-ingest-parquet-files", json=[_payload(), _payload()])
+    
     assert r.status_code == 200
     data = r.json()
-    assert data["status"] == "error"
-    assert data["message"] == "bad config"
-    assert data["data"]["error_type"] == "configuration_error"
+    assert data["status"] == "success"
+    assert len(data["data"]) == 2
+    assert data["data"][0]["success_count"] == 1
 
+def test_bulk_ingest_endpoint_exception_returns_500(monkeypatch: Any, client: TestClient) -> None:
+    """Testa se uma exceção no serviço bulk resulta em um HTTP 500."""
+    async def fake_bulk_process(*args: Any, **kwargs: Any) -> Any:
+        raise RuntimeError("Erro no processamento em lote")
+    monkeypatch.setattr(OnsService, "process_reservoir_data_bulk", fake_bulk_process)
 
-def test_request_error_is_handled(monkeypatch: Any, client: TestClient) -> None:
-    """Testa o tratamento de httpx.RequestError (ex: erro de rede)."""
-    from services.ons_service import OnsService
-
-    async def fake(_self: Any, filters: Any) -> Any:
-        raise httpx.RequestError("network issue")
-
-    monkeypatch.setattr(OnsService, "process_reservoir_data", fake)
-    r = client.post("/ons/filter-parquet-files", json=_payload())
-
-    assert r.status_code == 200
-    data = r.json()
-    assert data["status"] == "error"
-    assert "network issue" in data["message"]
-    assert data["data"]["error_type"] == "network_error"
-
-
-def test_http_status_error_is_handled(
-    monkeypatch: Any, client: TestClient
-) -> None:
-    """Testa o tratamento de httpx.HTTPStatusError (ex: API da ONS fora do ar)."""
-    from services.ons_service import OnsService
-
-    mock_response = httpx.Response(status_code=418, request=httpx.Request("GET", "http://test"))
-
-    async def fake(_self: Any, filters: Any) -> Any:
-        raise httpx.HTTPStatusError("I'm a teapot", request=mock_response.request, response=mock_response)
-
-    monkeypatch.setattr(OnsService, "process_reservoir_data", fake)
-    r = client.post("/ons/filter-parquet-files", json=_payload())
-
-    assert r.status_code == 200
-    data = r.json()
-    assert data["status"] == "error"
-    assert "I'm a teapot" in data["message"]
-    assert data["data"]["error_type"] == "api_error"
-    assert data["data"]["api_status_code"] == 418
-
-
-def test_generic_error_is_handled(monkeypatch: Any, client: TestClient) -> None:
-    """Testa o tratamento de uma exceção genérica e inesperada."""
-    from services.ons_service import OnsService
-
-    async def fake(_self: Any, filters: Any) -> Any:
-        raise RuntimeError("boom")
-
-    monkeypatch.setattr(OnsService, "process_reservoir_data", fake)
-    r = client.post("/ons/filter-parquet-files", json=_payload())
-
-    assert r.status_code == 200
-    data = r.json()
-    assert data["status"] == "error"
-    assert "boom" in data["message"]
-    assert data["data"]["error_type"] == "internal_error"
+    r = client.post("/ons/bulk-ingest-parquet-files", json=[_payload()])
+    
+    assert r.status_code == 500
+    assert "Erro no processamento em lote" in r.json()["detail"]

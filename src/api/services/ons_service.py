@@ -1,5 +1,6 @@
 import os
 import re
+from typing import List
 import httpx
 import pandas as pd  # type: ignore[import-untyped]
 import asyncio
@@ -388,3 +389,35 @@ class OnsService:
             error_msg = f"Unexpected error in process_reservoir_data: {e}"
             log(error_msg, level=LogLevel.ERROR)
             raise Exception(error_msg)
+    
+    async def process_reservoir_data_bulk(
+        self, filters_list: List[DateFilterDTO]
+    ) -> List[ProcessResponse | BaseException]:
+        """
+        Recebe uma lista de filtros DTO e processa cada um em paralelo.
+        
+        Args:
+            filters_list: Uma lista de objetos DateFilterDTO.
+            
+        Returns:
+            Uma lista de objetos ProcessResponse, um para cada DTO processado.
+        """
+        # Cria uma tarefa para cada DTO na lista
+        tasks = [
+            self.process_reservoir_data(dto) for dto in filters_list
+        ]
+        
+        # Executa todas as tarefas concorrentemente e aguarda a conclusão
+        results: List[ProcessResponse | BaseException] = await asyncio.gather(
+            *tasks, return_exceptions=True
+        )
+        # Opcional: Logar exceções inesperadas que o gather possa ter capturado
+        final_results = []
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                log(f"Erro inesperado ao processar DTO {i}: {result}", LogLevel.ERROR)
+                # Você pode criar um ProcessResponse de erro aqui se quiser
+            else:
+                final_results.append(result)
+        
+        return final_results
