@@ -22,8 +22,8 @@ class BigQueryRepository(ABC):
 
 class GCPBigQueryRepository(BigQueryRepository):
     def __init__(self) -> None:
-        self.project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
-        self.location = os.environ.get("BIGQUERY_LOCATION", "southamerica-east1")
+        self.project_id = "sauter-university-challenger"
+        self.location = "southamerica-east1"
         log(
             f"GCPBigQueryRepository init - project={self.project_id}, location={self.location}",
             LogLevel.DEBUG,
@@ -39,9 +39,6 @@ class GCPBigQueryRepository(BigQueryRepository):
     @client.setter
     def client(self, value: bigquery.Client) -> None:  # 👈 setter só pra testes
         self._client = value
-
-    
-    
 
     def _create_bigquery_client(self) -> bigquery.Client:
         log("Creating BigQuery client", LogLevel.DEBUG)
