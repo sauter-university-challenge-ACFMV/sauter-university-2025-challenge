@@ -3,7 +3,8 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import uvicorn
 from datetime import date
-from routers.ons_router import create_router
+from routers.ons_router import create_router as create_router
+from routers.bigquery_router import create_router as create_reservoir_router
 from dotenv import load_dotenv
 
 # carrega o arquivo .env que está no mesmo diretório do main.py
@@ -16,6 +17,7 @@ app = FastAPI(
 )
 
 app.include_router(create_router())
+app.include_router(create_reservoir_router())  
 
 
 class DataFilter(BaseModel):
@@ -25,8 +27,14 @@ class DataFilter(BaseModel):
 
 @app.get("/")
 async def root() -> dict:
-    return {"message": "Hello World"}
-
+    return {
+        "message": "Hello World",
+        "endpoints": {
+            "ons": "/ons/filter-parquet-files",
+            "reservoir": "/reservoir/data",  
+            "docs": "/docs"
+        }
+    }
 
 @app.get("/health")
 async def health() -> dict:

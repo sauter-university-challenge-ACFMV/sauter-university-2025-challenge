@@ -34,12 +34,13 @@ def client() -> Generator[TestClient, None, None]:
 
 # --- Testes combinados de ambos os arquivos ---
 
-
 def test_read_main(client: TestClient) -> None:
-    """Testa o endpoint principal ('/') usando um cliente com dependências simuladas."""
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json() == {"message": "Hello World"}
+    body = response.json()
+    assert body["message"] == "Hello World"
+    assert "endpoints" in body  
+
 
 
 def test_openapi_and_docs(client: TestClient) -> None:
