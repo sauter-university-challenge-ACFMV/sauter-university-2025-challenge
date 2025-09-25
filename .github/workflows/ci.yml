@@ -8,32 +8,8 @@ on:
     branches: [main, master]
 
 jobs:
-  # Job 1: Verificar estilo e formatação do código python
-  # lint:
-  #   name: Lint & Format
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 5
-    
-  #   steps:
-  #   - uses: actions/checkout@v4
-    
-  #   - name: Setup Python 3.11
-  #     uses: actions/setup-python@v4
-  #     with:
-  #       python-version: '3.11'
-    
-  #   - name: Install Hatch & Ruff
-  #     run: pip install hatch ruff
-    
-  #   # Verificar problemas de estilo no código
-  #   - name: Lint with Ruff
-  #     run: uv run ruff check src/
-    
-  #   # Verificar se código está bem formatado
-  #   - name: Format check with Ruff
-  #     run: uv run ruff format --check src/
 
-  # Job 2: Verificar anotações de tipo
+  # Job 1: Verificar anotações de tipo
   type-check:
     name: Type Check
     runs-on: ubuntu-latest
@@ -56,7 +32,7 @@ jobs:
     - name: Type check with MyPy
       run: uv run mypy src/ --config-file=pyproject.toml
 
-  # Job 3: Executar testes e verificar cobertura
+  # Job 2: Executar testes e verificar cobertura
   test:
     name: Tests & Coverage
     runs-on: ubuntu-latest
@@ -79,7 +55,7 @@ jobs:
     - name: Run tests with coverage
       run: uv run pytest src/api/tests/ --cov=src/api --cov-report=html --cov-fail-under=85
 
-  # Job 4: Construir imagem Docker (só executa se outros jobs passaram)
+  # Job 3: Construir imagem Docker (só executa se outros jobs passaram)
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest
