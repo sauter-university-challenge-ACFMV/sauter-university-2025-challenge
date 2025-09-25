@@ -15,3 +15,5 @@ class DateFilterDTO(BaseModel):
         None, description="Filter for files modified on or before this year (YYYY)."
     )
     package: str | None = Field(None, description="Package name to filter resources.")
+
+    bucket: str | None = Field(None, description="GCS bucket to save files.")

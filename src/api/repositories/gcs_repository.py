@@ -125,13 +125,28 @@ class GCSFileRepository(FileRepository):
                 f"Original error: {e}"
             )
 
-    def upload(self, file: IO[bytes], filename: str, content_type: str) -> str:
-        blob = self.bucket.blob(filename)
-        blob.upload_from_string(file.read(), content_type=content_type)
-        return blob.public_url
+    def upload(self, file: IO[bytes], filename: str, content_type: str, _bucket_name: str | None) -> str:
+        try:
+            if _bucket_name:
+                log(f"Using custom bucket: {_bucket_name}", LogLevel.DEBUG)
+                bucket = self.client.bucket(_bucket_name)
+            else:
+                bucket = self.bucket
 
-    def save(self, file: IO[bytes], filename: str) -> str:
-        return self.upload(file, filename, "application/octet-stream")
+            # Check if bucket exists
+            if not bucket.exists():
+                log(f"Bucket '{bucket.name}' does not exist.", LogLevel.ERROR)
+                raise Exception(f"Bucket '{bucket.name}' does not exist.")
+
+            blob = bucket.blob(filename)
+            blob.upload_from_string(file.read(), content_type=content_type)
+            return blob.public_url
+        except Exception as e:
+            log(f"Error uploading file to GCS: {e}", LogLevel.ERROR)
+            raise
+
+    def save(self, file: IO[bytes], filename: str, _bucket_name: str | None) -> str:
+        return self.upload(file, filename, "application/octet-stream", _bucket_name)
 
     def _table_exists(self, dataset_id: str, table_id: str) -> bool:
         """Check if a BigQuery table exists"""

@@ -19,6 +19,7 @@ class DownloadInfo(BaseModel):
     year: int
     package: str
     data_type: str
+    bucket: str | None = None
 
 
 class DownloadResult(BaseModel):
@@ -82,10 +83,10 @@ class OnsService:
             return f"{package_name}/{resource_year}/{parquet_filename}"
         return f"{package_name}/{now.year}/{now.month:02d}/{now.day:02d}/{parquet_filename}"
 
-    def _save_to_gcs(self, buffer: io.BytesIO, gcs_path: str) -> str:
+    def _save_to_gcs(self, buffer: io.BytesIO, gcs_path: str, _bucket_name: str | None) -> str:
         log(f"Saving buffer to GCS: {gcs_path}", level=LogLevel.DEBUG)
         save_buffer = io.BytesIO(buffer.getvalue())
-        return self.repository.save(save_buffer, gcs_path)
+        return self.repository.save(save_buffer, gcs_path, _bucket_name=_bucket_name)
 
     async def _download_parquet(
         self,
@@ -168,7 +169,7 @@ class OnsService:
 
             # Save to GCS
             try:
-                gcs_url = self._save_to_gcs(buffer, gcs_path)
+                gcs_url = self._save_to_gcs(buffer, gcs_path, _bucket_name=download_info.bucket)
                 result.success = True
                 result.gcs_path = gcs_path
                 log(f"Successfully saved to bucket path: {gcs_path}, URL: {gcs_url}", level=LogLevel.INFO)
@@ -267,6 +268,7 @@ class OnsService:
                         year=resource_year,
                         package=package,
                         data_type=fmt,
+                        bucket=filters.bucket
                     )
                     parquet_resources_to_download.append(download_info)
                     log(
@@ -296,6 +298,7 @@ class OnsService:
                             year=datetime.now().year,
                             package=package,
                             data_type=fmt,
+                            bucket=filters.bucket
                         )
                         parquet_resources_to_download.append(download_info)
                         log(
@@ -325,13 +328,14 @@ class OnsService:
 
                 for resource, result in zip(parquet_resources_to_download, download_results):
                     if isinstance(result, Exception):
+                        bucket_name = resource.bucket if resource.bucket else self.repository.bucket_name
                         failed_downloads.append({
                             "url": resource.url,
                             "year": resource.year,
                             "package": resource.package,
                             "data_type": resource.data_type,
                             "error_message": str(result),
-                            "bucket": self.repository.bucket_name,
+                            "bucket": bucket_name,
                         })
                         log(f"Task failed for {resource.url}: {result}", level=LogLevel.ERROR)
                     elif isinstance(result, DownloadResult):
