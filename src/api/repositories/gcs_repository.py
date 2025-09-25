@@ -1,7 +1,8 @@
 import os
 import json
 from typing import IO, Tuple
-from google.cloud import storage, bigquery  # type: ignore[import-untyped]
+import google.cloud.storage as storage  # type: ignore[import-untyped]
+import google.cloud.bigquery as bigquery  # type: ignore[import-untyped]
 from google.oauth2 import service_account  # type: ignore[import-untyped]
 from google.api_core.exceptions import NotFound  # type: ignore[import-untyped]
 from repositories.base_repository import FileRepository
