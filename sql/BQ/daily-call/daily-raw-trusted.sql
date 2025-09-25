@@ -1,0 +1,1 @@
+CALL `sauter-university-challenger.procedure.process_bronze_to_silver`();
