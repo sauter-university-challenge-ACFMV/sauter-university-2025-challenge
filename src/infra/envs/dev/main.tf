@@ -65,7 +65,7 @@ module "cloud_run" {
   project_id              = var.project_id
   region                  = var.region
   name                    = "baseline-api"
-  image                   = "us-docker.pkg.dev/cloudrun/container/hello" # Lembre de mudar para sua imagem
+  image                   = "southamerica-east1-docker.pkg.dev/sauter-university-challenger/apps/baseline-api@sha256:f7afd2bf34fdbd30286ccfbfa6542f58d2c319e701d5c7ac83938198f215a425"
   service_account_email   = module.iam.runtime_sa_email
   allow_unauthenticated   = true
   env                     = var.env
